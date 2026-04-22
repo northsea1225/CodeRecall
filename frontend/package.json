@@ -1,0 +1,36 @@
+{
+  "name": "coderecall-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "test": "vitest run",
+    "build": "tsc && vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 5173"
+  },
+  "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "antd": "^5.22.7",
+    "axios": "^1.7.9",
+    "i18next": "^26.0.6",
+    "katex": "^0.16.45",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-i18next": "^17.0.4",
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^7.1.1",
+    "recharts": "^2.15.0",
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10",
+    "vitest": "^2.1.8"
+  }
+}

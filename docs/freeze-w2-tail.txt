@@ -1,0 +1,30 @@
+dist/assets/index-B4WyjhQ_.js                1.10 kB │ gzip:   0.65 kB
+dist/assets/theme-D37v0umD.js                1.75 kB │ gzip:   0.63 kB
+dist/assets/useBreakpoint-meoglmHX.js        1.78 kB │ gzip:   0.87 kB
+dist/assets/row-5gDsENsh.js                  3.62 kB │ gzip:   1.59 kB
+dist/assets/index-D_qcmDQ4.js                5.62 kB │ gzip:   2.20 kB
+dist/assets/index-DYXSfcRP.js                6.38 kB │ gzip:   2.68 kB
+dist/assets/reviewStore-BY1dUccy.js          7.50 kB │ gzip:   2.82 kB
+dist/assets/mistakeService-CXtXsm6K.js       7.50 kB │ gzip:   3.28 kB
+dist/assets/index-d81maAmQ.js               14.51 kB │ gzip:   5.39 kB
+dist/assets/progress-jBSCpX8m.js            16.34 kB │ gzip:   5.97 kB
+dist/assets/index-BDxynD3f.js               22.78 kB │ gzip:   8.67 kB
+dist/assets/monaco-DXV6ChcW.js              23.35 kB │ gzip:   8.28 kB
+dist/assets/Pagination-D2XySe7z.js          24.21 kB │ gzip:   7.33 kB
+dist/assets/index-m2fUmqZj.js               33.85 kB │ gzip:  10.29 kB
+dist/assets/index-DPmcJ59Y.js               38.79 kB │ gzip:  14.07 kB
+dist/assets/index-kScwlTio.js               39.23 kB │ gzip:  14.20 kB
+dist/assets/api-Cc1VCvho.js                 43.32 kB │ gzip:  17.14 kB
+dist/assets/index-C3pKPhhw.js               47.43 kB │ gzip:  14.59 kB
+dist/assets/index-CpC1TcZd.js               60.88 kB │ gzip:  18.67 kB
+dist/assets/taxonomyService-Epk-bqaL.js     80.28 kB │ gzip:  26.47 kB
+dist/assets/index-G9kh6iX4.js              157.21 kB │ gzip:  49.33 kB
+dist/assets/index-C6Dm2I5d.js              194.24 kB │ gzip:  61.95 kB
+dist/assets/index-DhOCggnN.js              611.35 kB │ gzip: 199.88 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 7.86s
+frozen ok
