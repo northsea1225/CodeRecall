@@ -8,17 +8,22 @@ from sqlalchemy.orm import Session
 
 from app.api.errors import raise_api_error
 from app.db.session import get_db
-from app.schemas.import_export import ExportResponse, ImportPayload, ImportResponse
+from app.schemas.import_export import ExportResponse, ExportResponseV3, ImportPayload, ImportPayloadV3, ImportResponse
 from app.services.import_export_service import (
     export_data,
+    export_data_v3,
     export_mistakes_v2,
     import_data,
+    import_data_v3,
     import_mistakes_v2_records,
     parse_export_include,
 )
 
 
 router = APIRouter(tags=["import-export"])
+V1_IMPORT_RESPONSE_EXCLUDE = {
+    "imported": {"review_sessions", "review_session_items", "review_logs"},
+}
 
 
 @router.get("/export", response_model=ExportResponse)
@@ -38,7 +43,20 @@ def export_route(
     )
 
 
-@router.post("/import", response_model=ImportResponse)
+@router.get("/export/v3", response_model=ExportResponseV3)
+def export_v3_route(db: Session = Depends(get_db)) -> JSONResponse:
+    export_payload = export_data_v3(db)
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    return JSONResponse(
+        content=jsonable_encoder(export_payload),
+        media_type="application/json",
+        headers={
+            "Content-Disposition": f'attachment; filename="coderecall-v3-{timestamp}.json"',
+        },
+    )
+
+
+@router.post("/import", response_model=ImportResponse, response_model_exclude=V1_IMPORT_RESPONSE_EXCLUDE)
 def import_route(
     payload: ImportPayload,
     strategy: str = Query(default="skip_existing"),
@@ -48,13 +66,23 @@ def import_route(
     return import_data(db, payload, strategy)
 
 
+@router.post("/import/v3", response_model=ImportResponse)
+def import_v3_route(
+    payload: ImportPayloadV3,
+    strategy: str = Query(default="skip_existing"),
+    db: Session = Depends(get_db),
+) -> ImportResponse:
+    """Import a schema v3 full backup, including review history."""
+    return import_data_v3(db, payload, strategy)
+
+
 @router.get("/mistakes/export")
 def export_mistakes_route(db: Session = Depends(get_db)) -> JSONResponse:
     """Export mistakes as a v2 round-trip list."""
     return JSONResponse(content=jsonable_encoder(export_mistakes_v2(db)))
 
 
-@router.post("/mistakes/import", response_model=ImportResponse)
+@router.post("/mistakes/import", response_model=ImportResponse, response_model_exclude=V1_IMPORT_RESPONSE_EXCLUDE)
 def import_mistakes_route(
     payload: Any = Body(...),
     strategy: str = Query(default="skip_existing"),

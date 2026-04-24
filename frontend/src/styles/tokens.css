@@ -107,6 +107,10 @@
   --border-default: #E2E8F0;
   --border-divider: #F1F5F9;
   --app-sider-bg: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  --onboarding-diff-bg: #1e1e1e;
+  --onboarding-diff-del: #f48771;
+  --onboarding-diff-add: #89d185;
+  --onboarding-diff-info: #9cdcfe;
   --app-sider-border: #e2e8f0;
   --app-sider-brand-color: #0f172a;
   --app-sider-nav-color: #475569;
@@ -178,6 +182,10 @@
   --color-bg-surface-dark: #16213E;
   --color-border-default-dark: #2A2A4A;
   --app-sider-bg: linear-gradient(180deg, #111827 0%, #1e293b 100%);
+  --onboarding-diff-bg: #1e1e1e;
+  --onboarding-diff-del: #f48771;
+  --onboarding-diff-add: #89d185;
+  --onboarding-diff-info: #9cdcfe;
   --app-sider-border: rgba(255, 255, 255, 0.08);
   --app-sider-brand-color: #f8fafc;
   --app-sider-nav-color: #cbd5e1;

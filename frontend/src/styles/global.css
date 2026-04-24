@@ -567,3 +567,19 @@ body {
 .review-markdown .katex {
   color: inherit;
 }
+
+.onboarding-diff-card {
+  background: var(--onboarding-diff-bg);
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 40px;
+  max-width: 480px;
+  width: 100%;
+  text-align: left;
+  font-family: monospace;
+  font-size: 13px;
+}
+.onboarding-diff-card .diff-del { color: var(--onboarding-diff-del); }
+.onboarding-diff-card .diff-add { color: var(--onboarding-diff-add); }
+.onboarding-diff-card .diff-info { color: var(--onboarding-diff-info); margin-top: 8px; }

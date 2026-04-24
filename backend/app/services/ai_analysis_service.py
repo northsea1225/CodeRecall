@@ -61,9 +61,9 @@ def build_mistake_prompt_input(mistake: object) -> MistakePromptInput:
     review_count = max(stored_count, len(review_logs))
 
     recent_results = [
-        _review_result_value(getattr(log, "result"))
+        _review_result_value(getattr(log, "user_result"))
         for log in review_logs[:3]
-        if getattr(log, "result", None) is not None
+        if getattr(log, "user_result", None) is not None
     ]
 
     recent_notes = [

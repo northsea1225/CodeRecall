@@ -16,4 +16,4 @@ class ProblemUrlPreviewResponse(BaseModel):
     difficulty: int
     tags: list[str]
     stem_markdown: str
-    warnings: list[str]
+    warnings: list[str] = []

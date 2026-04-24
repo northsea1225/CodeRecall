@@ -20,6 +20,7 @@ import { listCategories } from "../../services/taxonomyService";
 import { useMistakeStore } from "../../stores/mistakeStore";
 import { useUIStore } from "../../stores/uiStore";
 import type { Category, Mistake } from "../../types/mistake";
+import OnboardingPage from "./OnboardingPage";
 
 const formatDate = (value: string, locale: string): string =>
   new Date(value).toLocaleString(locale, {
@@ -39,6 +40,7 @@ export default function MistakeListPage() {
   const pagination = useMistakeStore((state) => state.pagination);
   const loading = useMistakeStore((state) => state.loading);
   const error = useMistakeStore((state) => state.error);
+  const hasFetched = useMistakeStore((state) => state.hasFetched);
   const fetchList = useMistakeStore((state) => state.fetchList);
   const setFilter = useMistakeStore((state) => state.setFilter);
   const showToast = useUIStore((state) => state.showToast);
@@ -194,6 +196,20 @@ export default function MistakeListPage() {
       : null;
 
   const totalPages = Math.max(Math.ceil(pagination.total / pagination.page_size), 1);
+
+  const isUnfiltered =
+    !filters.keyword.trim() &&
+    !filters.categoryId &&
+    !filters.language &&
+    filters.page === 1;
+
+  const shouldShowOnboarding =
+    hasFetched && !loading && !error && isUnfiltered && pagination.total === 0 &&
+    !localStorage.getItem("coderecall_ever_imported");
+
+  if (shouldShowOnboarding) {
+    return <OnboardingPage onImported={() => { void fetchList(); }} />;
+  }
 
   return (
     <div className="page-stack">

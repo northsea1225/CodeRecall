@@ -1,0 +1,86 @@
+{
+  "version": "v1",
+  "schema_version": "v2",
+  "categories": [
+    {
+      "name": "算法题",
+      "description": "算法竞赛与刷题中的典型错误"
+    }
+  ],
+  "tags": [
+    {
+      "name": "树形数据结构"
+    },
+    {
+      "name": "动态规划"
+    },
+    {
+      "name": "图论"
+    },
+    {
+      "name": "数论"
+    }
+  ],
+  "mistakes": [
+    {
+      "title": "线段树 push_down 漏调",
+      "stem_markdown": "区间最大值线段树支持区间加法和区间查询最大值。由于 query 递归访问子节点前没有调用 push_down，子节点仍保留旧值，导致返回错误答案。",
+      "wrong_answer_markdown": "```cpp\nint query(int p, int l, int r, int ql, int qr) {\n  if (ql <= l && r <= qr) return tree[p].mx;\n  int mid = (l + r) >> 1;\n  int ans = INT_MIN;\n  if (ql <= mid) ans = max(ans, query(p << 1, l, mid, ql, qr));\n  if (qr > mid) ans = max(ans, query(p << 1 | 1, mid + 1, r, ql, qr));\n  return ans;\n}\n```\n\n错误点：lazy 标记未向下传递。",
+      "correct_answer_markdown": "```cpp\nint query(int p, int l, int r, int ql, int qr) {\n  if (ql <= l && r <= qr) return tree[p].mx;\n  push_down(p);\n  int mid = (l + r) >> 1;\n  int ans = INT_MIN;\n  if (ql <= mid) ans = max(ans, query(p << 1, l, mid, ql, qr));\n  if (qr > mid) ans = max(ans, query(p << 1 | 1, mid + 1, r, ql, qr));\n  return ans;\n}\n```\n\n修正：在 query 函数头部调用 push_down。",
+      "error_reason_markdown": "懒标记必须在 query/update 下探前调用，否则子节点数据是脏数据。只看当前节点的最大值是正确的，但递归到子区间前必须先把父节点的延迟更新传下去。",
+      "language": "cpp",
+      "difficulty": 4,
+      "source": "经典算法 Demo",
+      "status": "new",
+      "category_name": "算法题",
+      "tag_names": [
+        "树形数据结构"
+      ]
+    },
+    {
+      "title": "背包 DP 数组初始化错误",
+      "stem_markdown": "0-1 背包要求恰好装满容量 W 并取得最大价值。由于 dp 数组初始化为 0，不可达状态被当作可达状态，导致选空物品时结果错误。",
+      "wrong_answer_markdown": "```cpp\nmemset(dp, 0, sizeof dp);\nfor (int i = 1; i <= n; ++i) {\n  for (int j = W; j >= w[i]; --j) {\n    dp[j] = max(dp[j], dp[j - w[i]] + v[i]);\n  }\n}\n```\n\n错误点：要求恰好装满时，不能把所有容量初始化为 0。",
+      "correct_answer_markdown": "```cpp\nfill(dp, dp + W + 1, INT_MIN / 2);\ndp[0] = 0;\nfor (int i = 1; i <= n; ++i) {\n  for (int j = W; j >= w[i]; --j) {\n    dp[j] = max(dp[j], dp[j - w[i]] + v[i]);\n  }\n}\n```\n\n修正：不可达状态初始化为 -INF，只有 dp[0] = 0。",
+      "error_reason_markdown": "恰好装满和最多装满的初始化策略不同。最多装满可以把空选择视为 0，但恰好装满必须区分不可达状态，否则会把不存在的转移当成合法方案。",
+      "language": "cpp",
+      "difficulty": 3,
+      "source": "经典算法 Demo",
+      "status": "new",
+      "category_name": "算法题",
+      "tag_names": [
+        "动态规划"
+      ]
+    },
+    {
+      "title": "Dijkstra 无 vis 标记 TLE",
+      "stem_markdown": "带权最短路使用优先队列优化 Dijkstra。由于每次从堆中取出节点后没有标记已访问，也没有跳过旧状态，重复松弛大量边，最终超时。",
+      "wrong_answer_markdown": "```cpp\nwhile (!pq.empty()) {\n  auto [d, u] = pq.top();\n  pq.pop();\n  for (auto [v, w] : graph[u]) {\n    if (dist[v] > d + w) {\n      dist[v] = d + w;\n      pq.push({dist[v], v});\n    }\n  }\n}\n```\n\n错误点：每次从堆中取出节点后未检查 vis。",
+      "correct_answer_markdown": "```cpp\nwhile (!pq.empty()) {\n  auto [d, u] = pq.top();\n  pq.pop();\n  if (vis[u]) continue;\n  vis[u] = true;\n  for (auto [v, w] : graph[u]) {\n    if (dist[v] > d + w) {\n      dist[v] = d + w;\n      pq.push({dist[v], v});\n    }\n  }\n}\n```\n\n修正：加 if (vis[u]) continue; 后立即 vis[u] = true。",
+      "error_reason_markdown": "Dijkstra 需要 vis 数组保证每个节点只被松弛一次。优先队列里会保留旧距离状态，不跳过已确定的节点会造成重复扩展，复杂度失控。",
+      "language": "cpp",
+      "difficulty": 3,
+      "source": "经典算法 Demo",
+      "status": "new",
+      "category_name": "算法题",
+      "tag_names": [
+        "图论"
+      ]
+    },
+    {
+      "title": "int 溢出未开 long long",
+      "stem_markdown": "两数相乘后取模，输入范围允许 a 和 b 接近 1e9。乘法中间结果超出 int 范围，即使最终取模也已经得到错误值。",
+      "wrong_answer_markdown": "```cpp\nint ans = a * b % MOD;\n```\n\n错误点：a * b 在 int 中先溢出。",
+      "correct_answer_markdown": "```cpp\nlong long ans = (long long)a * b % MOD;\n```\n\n修正：乘法前强制转换为 long long。",
+      "error_reason_markdown": "a*b 在转换为 long long 之前已经溢出，必须在乘法前强制转换。只把结果变量声明为 long long 不够，因为表达式的计算类型仍然可能是 int。",
+      "language": "cpp",
+      "difficulty": 2,
+      "source": "经典算法 Demo",
+      "status": "new",
+      "category_name": "算法题",
+      "tag_names": [
+        "数论"
+      ]
+    }
+  ]
+}

@@ -4,7 +4,8 @@ from fastapi import APIRouter
 from fastapi.exceptions import HTTPException
 
 from app.schemas.problem_import import ProblemUrlPreviewRequest, ProblemUrlPreviewResponse
-from app.services.problem_import_service import ProblemImportError, fetch_problem_preview
+from app.services.problem_import_service import fetch_problem_preview
+from app.services.providers.base import ProblemImportError
 
 
 router = APIRouter(prefix="/import", tags=["problem-import"])

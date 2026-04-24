@@ -1,18 +1,20 @@
 # 码错本 (CodeRecall) — 项目交接文档
 
 > 新对话直接读此文件，跳过所有背景询问，立即进入执行模式。
+> ⚠️ **角色约束**：Claude 只做方案讨论和协调，不擅自执行代码修改——必须获得用户明确授权后才能派发任务（详见文末协作规范）。
 
 ---
 
 ## 项目简介
 
-**码错本**：面向 OI/ACM/LeetCode 选手的智能编程错题本。
+**码错本**：面向 OI/ACM/LeetCode 选手的智能编程错题本。核心差异化：6 阶段动态 AI 教练（根据复习历史判断状态，非通用回复）+ SM-2 遗忘曲线调度 + LeetCode 一键导入。
 核心循环：**导入题目 → 记录错误 → SM-2 间隔重复调度复习 → 6 阶段动态 AI 深度分析**。
 
 - 项目路径：`/Users/hfish/Claude_chat/协同码力/`
-- 后端：FastAPI + SQLAlchemy + SQLite，Python 3.11+
+- GitHub：`https://github.com/northsea1225/CodeRecall`
+- 后端：FastAPI + SQLAlchemy + SQLite，Python 3.9.6（本地 venv）
 - 前端：React 18 + TypeScript + Vite + Ant Design 5
-- 测试：**120 passed**（后端 pytest），前端 vitest
+- 测试：后端 **136 passed**（pytest），前端 **32 passed**（vitest，8 files）
 
 ---
 
@@ -33,37 +35,54 @@ API 文档：`http://localhost:8000/docs`
 
 ---
 
+## 当前焦点
+
+**⬜ C. 全量备份/导出（schema_v3）** — Month 1，下一个执行任务，工时约 3 天
+
+技术债说明：
+- 当前 v2 导出只含 `categories/tags/mistakes`，**不含** `review_logs / review_sessions`（数据丢失风险）
+- 数据库无稳定 UUID 字段，跨设备迁移 / Anki GUID / CF 去重全会出问题
+- schema_v3 结构：`{format, schema_version:3, exported_at, users, categories, tags, mistakes[{uuid, legacy_id}], review_sessions, review_session_items, review_logs}`
+- 需 DB migration 给 `mistakes` 表加 `uuid` 字段
+
+重点改造文件：
+- `backend/app/schemas/import_export.py`
+- `backend/app/services/import_export_service.py`
+- `backend/app/api/routes/import_export.py`
+
+---
+
 ## 已完成功能（当前状态）
 
 ### 核心功能 ✅
 - 错题 CRUD（题目、错因、正确答案、代码 diff）
-- SM-2 间隔重复算法调度复习（4 评分：Again/Hard/Good/Easy）
+- SM-2 间隔重复算法（后端已实现）；前端默认策略为 `due_first` / `random`，选择 `spaced_repetition` 策略时才触发 SM-2 间隔更新
 - 复习记录完整追踪（ReviewLog 表）
-- 统计看板：KPI 卡片、趋势图、热力图、薄弱题表
+- 统计看板：KPI 卡片、趋势图、热力图、薄弱题表、**算法能力雷达图**
 - 导入/导出 v2
+- **LaTeX 公式渲染**：KaTeX，支持 `$...$` 和 `$$...$$`
+- **键盘快捷键**：复习页 `1/2/3/4` 评分，空格翻牌
 
-### AI 分析（本轮重点完成）✅
+### AI 分析 ✅
 - **6 阶段 ReviewStage 感知提示词**（`backend/app/services/prompt_templates.py`）
   - 6 个阶段：`new_mistake` / `early_review` / `repeated_weakness` / `lapsed` / `oscillator` / `maintenance`
-  - `_compute_review_stage()` 优先级：count=0→NEW → lapsed→LAPSED → weak≥2→REPEATED_WEAKNESS → oscillator→OSCILLATOR → count≤1→EARLY_REVIEW → else→MAINTENANCE
-  - `_is_oscillator()`：检测最近结果 weak/strong 交替≥3次
-  - `_is_lapsed()`：距上次复习 >30 天（严格大于）
-  - XML 结构化输入 + `html.escape()` 防注入
-  - 语言专项提示：algorithm/javascript/python/c++/cpp/c 各有专属 hint
-- `ai_analysis_service.py`：`build_mistake_prompt_input()` 提取 review_logs 填充 5 个新字段
+  - 核心函数：`_compute_review_stage()`、`_is_oscillator()`、`_is_lapsed()`
+  - XML 结构化输入 + `html.escape()` 防注入；各语言专属 hint
+- `build_mistake_prompt_input()` 提取 review_logs 5 个字段（已修复 `user_result` 字段名 bug）
 - `ai.py` 路由：`selectinload(Mistake.review_logs)` 已加
-- **40 条专项单元测试**（`backend/tests/test_prompt_templates.py`）
+- **AI 变体题生成**：`POST /api/v1/ai/generate-variant/{mistake_id}`，普通 JSON 响应（非 SSE），前端 `VariantDrawer`
+- **AI 字段长度校验**：Pydantic `Annotated` 类型，集中在 `mistake_constraints.py`
 
-### 主题切换 ✅
-- Light/Dark 模式完整支持，左侧栏随主题正确切换
-- CSS 变量：`tokens.css` → `[data-theme='light']` / `[data-theme='dark']` 两套 `--app-sider-*` 变量
-- `global.css`：所有 `.app-sider` 规则改用 CSS 变量
-- `routes.tsx`：`Menu theme={theme === "dark" ? "dark" : "light"}`
-- `App.tsx`：ConfigProvider 加 `components: { Layout: { siderBg: "transparent", lightSiderBg: "transparent" } }`
+### 录入体验 ✅
+- **LeetCode URL 题面预览**：`POST /api/v1/import/problem-url/preview`，httpx + LeetCode GraphQL + markdownify，支持中英文站；返回题面草稿供用户补填错误代码/正确答案/错因后保存
+- **首次使用引导页（OnboardingPage）**：空题库全屏展示，含 URL 导入 + Demo 数据一键载入
+  - 触发：`pagination.total === 0 && !localStorage.getItem("coderecall_ever_imported") && hasFetched`
+  - Demo：4 道经典 C++ 错题（线段树/背包DP/Dijkstra/int溢出），位于 `frontend/src/data/demoImportPayload.json`
+  - `mistakeStore.ts` 新增 `hasFetched: boolean` 防首次加载闪屏
 
-### 品牌图标 ✅
+### 主题 & 品牌 ✅
+- Light/Dark 模式完整支持，CSS 变量双主题（`tokens.css` 双套 `--app-sider-*`）
 - `frontend/public/logo.png`：蓝色圆角 `</>` 图标 + 红色闪电徽标
-- `routes.tsx`：`<img src="/logo.png" alt="码错本" className="app-brand__mark" />`
 
 ---
 
@@ -73,84 +92,76 @@ API 文档：`http://localhost:8000/docs`
 |------|------|
 | `backend/app/services/prompt_templates.py` | AI 提示词核心，ReviewStage 枚举，所有 _compute_* 函数 |
 | `backend/app/services/ai_analysis_service.py` | AI 流式请求，`build_mistake_prompt_input()` |
-| `backend/app/api/routes/ai.py` | SSE 端点，review_logs eager load |
-| `backend/tests/test_prompt_templates.py` | 40 条单元测试，覆盖所有 6 个阶段 |
+| `backend/app/api/routes/ai.py` | SSE 端点，review_logs eager load，变体题端点 |
+| `backend/app/schemas/mistake_constraints.py` | 字段长度约束 Annotated 类型 |
+| `backend/app/api/routes/problem_import.py` | LeetCode URL 导入路由 |
+| `backend/app/services/problem_import_service.py` | LeetCode URL 导入解析核心 |
+| `backend/app/api/routes/import_export.py` | 导入/导出 v2 路由（schema_v3 重点改造点） |
+| `backend/app/schemas/import_export.py` | 导入/导出 schema（schema_v3 重点改造点） |
+| `backend/app/services/import_export_service.py` | 导入/导出服务逻辑（schema_v3 重点改造点） |
+| `backend/tests/test_prompt_templates.py` | ReviewStage / prompt 模板专项测试 |
+| `backend/app/services/taxonomy_service.py` | 分类/标签 CRUD 服务 |
+| `frontend/src/pages/MistakeList/OnboardingPage.tsx` | 首次使用引导页 |
+| `frontend/src/pages/MistakeList/index.tsx` | 错题列表页，引导触发逻辑入口 |
+| `frontend/src/components/common/ProblemUrlImporter.tsx` | URL 导入组件，支持 `autoFocus` |
+| `frontend/src/components/common/MarkdownRenderer.tsx` | Markdown + LaTeX 渲染 |
+| `frontend/src/components/review/VariantDrawer.tsx` | AI 变体题抽屉 |
+| `frontend/src/components/stats/RadarTagChart.tsx` | 算法能力雷达图 |
+| `frontend/src/pages/Review/index.tsx` | 复习主页，键盘快捷键入口 |
+| `frontend/src/stores/mistakeStore.ts` | Zustand store，含 `hasFetched` |
+| `frontend/src/data/demoImportPayload.json` | 4 道 Demo C++ 错题 |
 | `frontend/src/styles/tokens.css` | 设计令牌，双主题 CSS 变量 |
 | `frontend/src/styles/global.css` | 全局样式，布局规则 |
 | `frontend/src/routes.tsx` | 路由 + 侧边栏 JSX |
 | `frontend/src/App.tsx` | ConfigProvider，Ant Design 主题 |
-| `frontend/public/logo.png` | 应用图标 |
 
 ---
 
-## 下一步行动计划（按优先级）
+## 路线图（Month 1-3）
 
-### P0 — 立即执行（安全 + 低成本高收益）
+### Month 1 — 降阻力 + 数据安全
 
-#### 1. LaTeX 公式渲染
-OI 题目几乎都有数学公式，当前 Markdown 渲染不支持。
+| 任务 | 工时 | 状态 |
+|------|------|------|
+| 空状态引导（Demo 数据 + URL 输入框） | 0.5天 | ✅ 已完成 |
+| C. 全量备份/导出（含 review_logs、UUID、schema_v3） | 3天 | ⬜ 下一个（详见当前焦点） |
+| A. CF URL 导入（provider 模式拆分，CF API 缓存） | 4天 | ⬜ 待做 |
 
-```bash
-cd frontend && npm install katex @types/katex
-```
+**A 的注意事项（CF 特有坑）**：
+- CF 官方 API：`codeforces.com/api/{method}`，限频 1次/2秒；`problemset.problems` 只返回元数据（标题/rating/tags），**题面 HTML 仍需页面解析**
+- CF 公式在 MathJax script 中，需特殊处理，不能直接抓文本
+- Gym/private 题目会 403，明确 warning 而非报错
+- rating 映射：≤1000→1，1200-1500→2，1600-1900→3，2000-2400→4，≥2500→5
+- 做 A 时顺手重构 LeetCode 为 provider 模式：`providers/leetcode.py`、`providers/codeforces.py`
 
-- 在 `review-markdown` 渲染处（`ReviewPage` 组件内）集成 KaTeX
-- 前后处理 `$...$` 和 `$$...$$` 语法
-- 预计工时：1-2 小时
+### Month 2 — 手机端 + 习惯养成
 
-#### 2. AI 安全加固（后端字段长度校验）
-当前 `html.escape()` 防 XSS 已做，还需在 Pydantic schema 加字段长度上限：
+| 任务 | 工时 | 状态 |
+|------|------|------|
+| E. 手机端适配（复习模式优先，纯 CSS） | 3-4天 | ⬜ 待做 |
+| 连续打卡习惯增强（热力图已有，需强化 streak 激励） | 1天 | ⬜ 待做 |
+| 沉浸式暗房复习模式（隐藏侧边栏，全屏） | 1天 | ⬜ 待做 |
 
-- `stem_markdown`、`wrong_answer_markdown`、`correct_answer_markdown`：max_length=50000
-- `error_reason_markdown`：max_length=10000
-- `title`：max_length=500
-- 文件：`backend/app/schemas/` 中对应的 `MistakeCreate`/`MistakeUpdate` schema
+### Month 3 — 生态 + 体验深化
 
-### P1 — 近期执行（竞赛亮点功能）
+| 任务 | 工时 | 状态 |
+|------|------|------|
+| D. Anki 导出（genanki，HTML 字段，稳定 GUID） | 2天 | ⬜ 待做 |
+| 高级搜索（比赛来源、错因、掌握度多维筛选） | 2天 | ⬜ 待做 |
+| AI 分析分享卡片 | 2-3天 | ⬜ 待做 |
 
-#### 3. AI 变体题生成
-对已收录错题，让 AI 生成"同类陷阱"变体题，形成主动出题闭环。
+### Month 4-6 — 护城河
 
-- 新增端点：`POST /api/ai/generate-variant/{mistake_id}`
-- 复用现有 SSE 流式架构（参考 `ai.py`）
-- 提示词模板加在 `prompt_templates.py`（新增 `build_variant_prompt()` 函数）
-- 前端在 ReviewPage / MistakeDetail 页加"生成变体题"按钮
-
-#### 4. 算法能力雷达图
-数据已在库里，只需前端渲染。
-
-- 后端：在 `stats_service.py` 新增按 tag 聚合掌握度（correct 率、遗忘次数）
-- 前端：Stats 页增加 Recharts `RadarChart`，各顶点为 tag 名称
-- 需要先确保常用算法 tag 已预置（DFS、BFS、DP、贪心、二分、排序等）
-
-#### 5. 键盘快捷键复习模式
-- 复习页：`1/2/3/4` 直接触发 Again/Hard/Good/Easy 评分
-- 空格键翻转显示答案
-- 文件：`frontend/src/pages/ReviewPage.tsx`（或对应组件），加 `useEffect` 监听 `keydown`
-
-### P2 — 中期（录入阻力，最大用户痛点）
-
-#### 6. URL 一键导入（LeetCode 优先）
-从 LeetCode 题目 URL 自动抓取题面，消除手工复制摩擦。
-
-- 后端：新增 `POST /api/import/url`，用 `httpx` 请求 + `BeautifulSoup4` 解析 LeetCode 题目页
-- 提取字段：标题、题干（含 LaTeX）、示例输入输出、难度
-- 前端：导入页加 URL 输入框作为新的导入入口
-
----
-
-## 竞赛核心卖点（评委展示用）
-
-1. **6 阶段动态 AI 教练**：根据复习历史判断学生状态，给出针对性分析（非通用回复）
-2. **SM-2 科学记忆曲线**：有理论支撑的遗忘曲线调度
-3. **领域专项代码 Diff**：针对 OI/ACM 提交场景设计的代码对比展示
+- 赛后聚合洞察报告（多题 AI 分析汇总）
+- 错题集公开分享（Deck Share）
+- 浏览器插件（CF/LeetCode 页面一键收录）
 
 ---
 
 ## 代码规范备忘
 
 - 不写无意义注释，不写多行 docstring
-- 测试用 `unittest.TestCase`（后端），不 mock 数据库
+- 后端测试：`unittest.TestCase` 和 pytest 函数风格混用；数据库相关测试用真实 SQLite，不 mock DB（允许 `unittest.mock` patch 外部 API）
 - CSS 变量优先，不硬编码颜色值
 
 ---
@@ -168,12 +179,17 @@ cd frontend && npm install katex @types/katex
 3. **用户确认**：只有收到明确授权指令（如"可以执行"、"让 Codex 改"、"按这个方案做"）才能继续；一般讨论、认可思路、继续分析**不等于**授权
 4. **派发执行**：获得授权后，Claude 才调用 Codex / team 执行代码落地；执行 agent 只改授权范围内的文件
 
+### 标准分析与执行工具
+
+- **CCG**（`/ccg`）：Claude + Codex + Gemini 三方并行分析，用于方案设计和技术评估
+- **`/team`**：派发多文件并行执行任务给 Codex/executor agent
+
 ### 禁止行为（严重越权）
 
 - ❌ 讨论出方案后不向用户汇报，直接让 Codex 写文件
 - ❌ 用户要求"分析/查看"，却自动应用了修改建议
 - ❌ 预判用户意图，在收到"执行"指令前就提前派发写文件 prompt
-- ❌ Claude 自己直接使用 Edit / Write 工具修改项目代码文件（`~/.claude/**` 和 `.omc/**` 除外）
+- ❌ Claude 自己直接使用 Edit / Write 工具修改项目代码文件（`~/.claude/**`、`.omc/**`、`CLAUDE.md` 除外）
 - ❌ `omc ask codex` 的 prompt 中包含 write / implement / apply changes to files 等意图，但未获授权
 
 ### 执行后复核

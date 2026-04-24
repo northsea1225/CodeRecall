@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Optional
+from uuid import uuid4
 
 from sqlalchemy import Boolean, CheckConstraint, DateTime, Enum as SqlEnum, Float, ForeignKey, Index
 from sqlalchemy import Integer, String, Text, func
@@ -31,6 +32,13 @@ class Mistake(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    uuid: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        unique=True,
+        index=True,
+        nullable=True,
+        default=lambda: str(uuid4()),
+    )
     title: Mapped[str] = mapped_column(String(255), index=True)
     stem_markdown: Mapped[str] = mapped_column(Text)
     wrong_answer_markdown: Mapped[str] = mapped_column(Text)

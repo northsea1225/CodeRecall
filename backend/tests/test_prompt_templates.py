@@ -239,7 +239,7 @@ class TestBuildMistakePromptInput(unittest.TestCase):
         log = MagicMock()
         log.answered_at = at
         log.shown_at = shown_at
-        log.result = result
+        log.user_result = result
         log.note = note
         return log
 

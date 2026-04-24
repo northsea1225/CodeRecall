@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Alert, Button, Card, Space, Typography, Upload } from "antd";
+import { Alert, Button, Card, Space, Switch, Typography, Upload } from "antd";
 import { useTranslation } from "react-i18next";
 
-import { exportAll, importPayload } from "../../services/importExportService";
+import { exportAll, exportAllV3, importPayload, importPayloadV3 } from "../../services/importExportService";
 import { useUIStore } from "../../stores/uiStore";
 import type { ImportPayload, ImportResponse } from "../../types/mistake";
 
@@ -20,6 +20,7 @@ export default function ImportExportPage() {
   const { t } = useTranslation();
   const [lastImport, setLastImport] = useState<ImportResponse | null>(null);
   const [lastFileName, setLastFileName] = useState<string | null>(null);
+  const [includeReview, setIncludeReview] = useState(false);
   const setGlobalLoading = useUIStore((state) => state.setGlobalLoading);
   const showToast = useUIStore((state) => state.showToast);
 
@@ -38,10 +39,15 @@ export default function ImportExportPage() {
     }
 
     const payload = parsed as Partial<ImportPayload>;
+    const schemaVersion = payload.schema_version;
+    const isV3 = schemaVersion === 3 || schemaVersion === "3" || schemaVersion === "v3";
+    if (isV3) {
+      return payload as ImportPayload;
+    }
     if (payload.version !== "v1") {
       throw new Error(t("importExport.errorVersionV1"));
     }
-    if (payload.schema_version && payload.schema_version !== "v2") {
+    if (schemaVersion && schemaVersion !== "v2") {
       throw new Error(t("importExport.errorVersionV2"));
     }
 
@@ -51,9 +57,18 @@ export default function ImportExportPage() {
   const handleExport = async () => {
     setGlobalLoading(true);
     try {
-      const response = await exportAll();
-      downloadJson("coderecall-export.json", response.data);
-      showToast("success", t("importExport.exportSuccess", { count: response.data.mistakes.length }));
+      if (includeReview) {
+        const response = await exportAllV3();
+        downloadJson(response.filename, response.data);
+        showToast(
+          "success",
+          t("importExport.exportFullSuccess", { count: response.data.mistakes?.length ?? 0 }),
+        );
+      } else {
+        const response = await exportAll();
+        downloadJson(response.filename, response.data);
+        showToast("success", t("importExport.exportSuccess", { count: response.data.mistakes.length }));
+      }
     } catch (exportError) {
       showToast("error", exportError instanceof Error ? exportError.message : t("importExport.exportFailed"));
     } finally {
@@ -65,7 +80,9 @@ export default function ImportExportPage() {
     setGlobalLoading(true);
     try {
       const payload = await parseImportPayload(file);
-      const response = await importPayload(payload);
+      const schemaVersion = payload.schema_version;
+      const isV3 = schemaVersion === 3 || schemaVersion === "3" || schemaVersion === "v3";
+      const response = await (isV3 ? importPayloadV3(payload) : importPayload(payload));
       setLastImport(response);
       setLastFileName(file.name);
       showToast(
@@ -94,12 +111,34 @@ export default function ImportExportPage() {
 
       <div className="import-grid">
         <Card className="panel-card" title={t("importExport.exportTitle")}>
-          <Typography.Paragraph className="soft-note">
-            {t("importExport.exportDesc")}
-          </Typography.Paragraph>
-          <Button type="primary" onClick={() => void handleExport()}>
-            {t("importExport.exportButton")}
-          </Button>
+          <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+            <Typography.Paragraph className="soft-note" style={{ marginBottom: 0 }}>
+              {t("importExport.exportDesc")}
+            </Typography.Paragraph>
+            <Space direction="vertical" size={4}>
+              <Space size={8} align="center">
+                <Switch
+                  checked={includeReview}
+                  onChange={setIncludeReview}
+                  checkedChildren={t("importExport.includeReviewShort")}
+                  unCheckedChildren={t("importExport.includeReviewShort")}
+                  aria-label={t("importExport.includeReview")}
+                />
+                <Typography.Text
+                  style={{ cursor: "pointer" }}
+                  onClick={() => setIncludeReview(!includeReview)}
+                >
+                  {t("importExport.includeReview")}
+                </Typography.Text>
+              </Space>
+              <Typography.Text className="soft-note" style={{ fontSize: 12 }}>
+                {t("importExport.includeReviewHelp")}
+              </Typography.Text>
+            </Space>
+            <Button type="primary" onClick={() => void handleExport()}>
+              {t("importExport.exportButton")}
+            </Button>
+          </Space>
         </Card>
 
         <Card className="panel-card" title={t("importExport.importTitle")}>
@@ -136,6 +175,16 @@ export default function ImportExportPage() {
             <Typography.Text>{t("importExport.importedMistakes", { count: lastImport.imported.mistakes })}</Typography.Text>
             <Typography.Text>{t("importExport.importedCategories", { count: lastImport.imported.categories })}</Typography.Text>
             <Typography.Text>{t("importExport.importedTags", { count: lastImport.imported.tags })}</Typography.Text>
+            {(lastImport.imported.review_sessions ?? 0) > 0 ? (
+              <Typography.Text>
+                {t("importExport.importedReviewSessions", { count: lastImport.imported.review_sessions })}
+              </Typography.Text>
+            ) : null}
+            {(lastImport.imported.review_logs ?? 0) > 0 ? (
+              <Typography.Text>
+                {t("importExport.importedReviewLogs", { count: lastImport.imported.review_logs })}
+              </Typography.Text>
+            ) : null}
             <Typography.Text className="soft-note">{t("importExport.skipped", { count: lastImport.skipped.length })}</Typography.Text>
             <Typography.Text className="soft-note">{t("importExport.importDone")}</Typography.Text>
           </Space>

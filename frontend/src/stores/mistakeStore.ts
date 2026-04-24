@@ -17,6 +17,7 @@ export interface MistakeStoreState {
   list: Mistake[];
   pagination: PaginationMeta;
   filters: MistakeFilters;
+  hasFetched: boolean;
   loading: boolean;
   error: string | null;
   fetchList: () => Promise<void>;
@@ -49,6 +50,7 @@ export const createMistakeStore = (
     list: [],
     pagination: defaultPagination,
     filters: defaultFilters,
+    hasFetched: false,
     loading: false,
     error: null,
     fetchList: async () => {
@@ -67,11 +69,13 @@ export const createMistakeStore = (
         set({
           list: response.items,
           pagination: response.pagination,
+          hasFetched: true,
           loading: false,
           error: null,
         });
       } catch (error) {
         set({
+          hasFetched: true,
           loading: false,
           error: extractApiErrorMessage(error),
         });
@@ -95,6 +99,7 @@ export const createMistakeStore = (
         filters: defaultFilters,
         pagination: defaultPagination,
         error: null,
+        hasFetched: false,
       }),
   }));
 
