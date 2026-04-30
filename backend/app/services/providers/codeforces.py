@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup, NavigableString
 from bs4.element import Tag
 
 from app.schemas.problem_import import ProblemUrlPreviewResponse
-from app.services.providers.base import ProblemImportError
+from app.services.providers.base import ProblemImportError, safe_request
 
 
 _CF_URL_PATTERNS = (
@@ -103,7 +103,11 @@ async def fetch_preview(url: str, client: httpx.AsyncClient) -> ProblemUrlPrevie
     source_url = f"Codeforces {external_id}"
 
     try:
-        response = await client.get(url, headers={"User-Agent": _USER_AGENT})
+        response = await safe_request(
+            client, "GET", url, headers={"User-Agent": _USER_AGENT}
+        )
+    except ProblemImportError:
+        raise
     except httpx.TimeoutException as exc:
         raise ProblemImportError("provider_timeout", "Codeforces request timed out.", 504) from exc
     except httpx.HTTPError as exc:
@@ -120,7 +124,7 @@ async def fetch_preview(url: str, client: httpx.AsyncClient) -> ProblemUrlPrevie
     if response.status_code == 404:
         raise ProblemImportError("problem_not_found", "Problem not found on Codeforces.", 404)
 
-    if response.status_code not in (200, 301, 302):
+    if response.status_code != 200:
         raise ProblemImportError("provider_error", f"Codeforces returned {response.status_code}.", 502)
 
     soup = BeautifulSoup(response.text, "lxml")

@@ -58,6 +58,14 @@ class FakeAsyncClient:
             raise self.post_exception
         return self.post_response
 
+    async def request(self, method: str, url: str, **kwargs: Any) -> FakeResponse:
+        method_upper = method.upper()
+        if method_upper == "GET":
+            return await self.get(url, **kwargs)
+        if method_upper == "POST":
+            return await self.post(url, **kwargs)
+        raise NotImplementedError(f"FakeAsyncClient.request unsupported method: {method}")
+
 
 class ProblemImportServiceTests(unittest.TestCase):
     def _run_with_client(self, url: str, configure: Optional[Any] = None):

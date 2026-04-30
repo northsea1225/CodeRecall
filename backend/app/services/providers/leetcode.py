@@ -7,7 +7,7 @@ import httpx
 import markdownify as md_converter
 
 from app.schemas.problem_import import ProblemUrlPreviewResponse
-from app.services.providers.base import ProblemImportError
+from app.services.providers.base import ProblemImportError, safe_request
 
 
 _DIFFICULTY_MAP = {"Easy": 1, "Medium": 3, "Hard": 5}
@@ -59,7 +59,9 @@ async def fetch_preview(url: str, client: httpx.AsyncClient) -> ProblemUrlPrevie
     }
 
     try:
-        response = await client.post(graphql_url, headers=headers, json=payload)
+        response = await safe_request(
+            client, "POST", graphql_url, headers=headers, json=payload
+        )
         if response.status_code >= 400:
             raise ProblemImportError("provider_forbidden", "LeetCode returned an error.", 502)
         data = response.json()

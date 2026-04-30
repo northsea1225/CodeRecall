@@ -29,6 +29,6 @@ async def fetch_problem_preview(url: str) -> ProblemUrlPreviewResponse:
 
     async with httpx.AsyncClient(
         timeout=httpx.Timeout(15.0, connect=5.0),
-        follow_redirects=True,
+        follow_redirects=False,
     ) as client:
         return await provider.fetch_preview(stripped, client)
