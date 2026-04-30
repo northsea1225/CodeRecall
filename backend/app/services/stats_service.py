@@ -76,16 +76,13 @@ def _empty_trend_item(target_date: date) -> StatsTrendItemOut:
     )
 
 
-def get_overview(db: Session, tz_offset_minutes: int = 0, user_id: int | None = None) -> StatsOverviewOut:
+def get_overview(db: Session, *, user_id: int, tz_offset_minutes: int = 0) -> StatsOverviewOut:
     now = _utc_now()
     today_local = _to_local_date(now, tz_offset_minutes)
     recent_start = today_local - timedelta(days=6)
 
-    mistake_filters = [Mistake.is_archived.is_(False)]
-    log_filters = []
-    if user_id is not None:
-        mistake_filters.append(Mistake.user_id == user_id)
-        log_filters.append(ReviewLog.user_id == user_id)
+    mistake_filters = [Mistake.is_archived.is_(False), Mistake.user_id == user_id]
+    log_filters = [ReviewLog.user_id == user_id]
     mistakes = db.scalars(select(Mistake).where(*mistake_filters)).all()
     review_logs = db.scalars(select(ReviewLog).where(*log_filters)).all()
 
@@ -139,19 +136,17 @@ def get_overview(db: Session, tz_offset_minutes: int = 0, user_id: int | None = 
 
 def get_trend(
     db: Session,
+    *,
+    user_id: int,
     days: int = 30,
     bucket: str = "day",
     tz_offset_minutes: int = 0,
-    user_id: int | None = None,
 ) -> StatsTrendOut:
     start_date, end_date = _date_window(days, tz_offset_minutes)
     items_by_date = {target_date: _empty_trend_item(target_date) for target_date in _list_window_dates(start_date, end_date)}
 
-    mistake_filters = [Mistake.is_archived.is_(False)]
-    log_filters = []
-    if user_id is not None:
-        mistake_filters.append(Mistake.user_id == user_id)
-        log_filters.append(ReviewLog.user_id == user_id)
+    mistake_filters = [Mistake.is_archived.is_(False), Mistake.user_id == user_id]
+    log_filters = [ReviewLog.user_id == user_id]
     mistakes = db.scalars(select(Mistake).where(*mistake_filters)).all()
     review_logs = db.scalars(select(ReviewLog).where(*log_filters)).all()
 
@@ -190,13 +185,11 @@ def get_trend(
     )
 
 
-def get_heatmap(db: Session, days: int = 90, tz_offset_minutes: int = 0, user_id: int | None = None) -> StatsHeatmapOut:
+def get_heatmap(db: Session, *, user_id: int, days: int = 90, tz_offset_minutes: int = 0) -> StatsHeatmapOut:
     start_date, end_date = _date_window(days, tz_offset_minutes)
     counts: dict[date, int] = {target_date: 0 for target_date in _list_window_dates(start_date, end_date)}
 
-    log_statement = select(ReviewLog)
-    if user_id is not None:
-        log_statement = log_statement.where(ReviewLog.user_id == user_id)
+    log_statement = select(ReviewLog).where(ReviewLog.user_id == user_id)
     review_logs = db.scalars(log_statement).all()
     for log in review_logs:
         shown_at = _ensure_utc(log.shown_at)
@@ -221,13 +214,11 @@ def get_heatmap(db: Session, days: int = 90, tz_offset_minutes: int = 0, user_id
     )
 
 
-def get_top_weak(db: Session, limit: int = 5, days: int = 30, user_id: int | None = None) -> StatsTopWeakOut:
+def get_top_weak(db: Session, *, user_id: int, limit: int = 5, days: int = 30) -> StatsTopWeakOut:
     now = _utc_now()
     cutoff = now - timedelta(days=days)
 
-    filters = [Mistake.is_archived.is_(False)]
-    if user_id is not None:
-        filters.append(Mistake.user_id == user_id)
+    filters = [Mistake.is_archived.is_(False), Mistake.user_id == user_id]
     mistakes = db.scalars(
         select(Mistake)
         .where(*filters)
@@ -296,13 +287,12 @@ def get_top_weak(db: Session, limit: int = 5, days: int = 30, user_id: int | Non
 
 def get_tag_radar(
     db: Session,
+    *,
+    user_id: int,
     min_count: int = 2,
     max_tags: int = 8,
-    user_id: int | None = None,
 ) -> StatsTagRadarOut:
-    filters = [Mistake.is_archived.is_(False)]
-    if user_id is not None:
-        filters.append(Mistake.user_id == user_id)
+    filters = [Mistake.is_archived.is_(False), Mistake.user_id == user_id]
     mistakes = db.scalars(
         select(Mistake)
         .where(*filters)
