@@ -10,14 +10,12 @@ class MistakeRepository:
     @staticmethod
     def _build_filters(
         *,
-        user_id: Optional[int] = None,
+        user_id: int,
         category_id: Optional[int] = None,
         language: Optional[str] = None,
         keyword: Optional[str] = None,
     ) -> list:
-        filters = []
-        if user_id is not None:
-            filters.append(Mistake.user_id == user_id)
+        filters = [Mistake.user_id == user_id]
         if category_id is not None:
             filters.append(Mistake.category_id == category_id)
         if language:
@@ -45,7 +43,7 @@ class MistakeRepository:
     def list(
         db: Session,
         *,
-        user_id: Optional[int] = None,
+        user_id: int,
         page: int,
         page_size: int,
         category_id: Optional[int] = None,
@@ -72,7 +70,7 @@ class MistakeRepository:
     def count(
         db: Session,
         *,
-        user_id: Optional[int] = None,
+        user_id: int,
         category_id: Optional[int] = None,
         language: Optional[str] = None,
         keyword: Optional[str] = None,
@@ -88,18 +86,17 @@ class MistakeRepository:
         return int(db.scalar(statement) or 0)
 
     @staticmethod
-    def get_by_id(db: Session, mistake_id: int, user_id: Optional[int] = None) -> Optional[Mistake]:
-        filters = [Mistake.id == mistake_id]
-        if user_id is not None:
-            filters.append(Mistake.user_id == user_id)
-        statement = MistakeRepository._base_query().where(*filters)
+    def get_by_id(db: Session, mistake_id: int, *, user_id: int) -> Optional[Mistake]:
+        statement = MistakeRepository._base_query().where(
+            Mistake.id == mistake_id, Mistake.user_id == user_id
+        )
         return db.scalar(statement)
 
     @staticmethod
     def find_existing(
         db: Session,
         *,
-        user_id: Optional[int] = None,
+        user_id: int,
         title: str,
         language: str,
         category_id: int,
@@ -108,7 +105,6 @@ class MistakeRepository:
             Mistake.title == title,
             Mistake.language == language,
             Mistake.category_id == category_id,
+            Mistake.user_id == user_id,
         )
-        if user_id is not None:
-            statement = statement.where(Mistake.user_id == user_id)
         return db.scalar(statement)

@@ -35,7 +35,7 @@ def _normalize_title(title: str) -> str:
 def list_mistakes(
     db: Session,
     *,
-    user_id: Optional[int] = None,
+    user_id: int,
     page: int,
     page_size: int,
     category_id: Optional[int] = None,
@@ -67,14 +67,14 @@ def list_mistakes(
     )
 
 
-def get_mistake(db: Session, mistake_id: int, user_id: Optional[int] = None) -> MistakeOut:
+def get_mistake(db: Session, mistake_id: int, *, user_id: int) -> MistakeOut:
     mistake = MistakeRepository.get_by_id(db, mistake_id, user_id=user_id)
     if mistake is None:
         raise_not_found("mistake", mistake_id)
     return _serialize_mistake(mistake)
 
 
-def create_mistake(db: Session, payload: MistakeCreate, user_id: Optional[int] = None) -> MistakeOut:
+def create_mistake(db: Session, payload: MistakeCreate, *, user_id: int) -> MistakeOut:
     from app.models import Mistake
 
     category = get_category(db, payload.category_id, user_id=user_id)
@@ -108,7 +108,7 @@ def create_mistake(db: Session, payload: MistakeCreate, user_id: Optional[int] =
     return _serialize_mistake(hydrated)
 
 
-def update_mistake(db: Session, mistake_id: int, payload: MistakeUpdate, user_id: Optional[int] = None) -> MistakeOut:
+def update_mistake(db: Session, mistake_id: int, payload: MistakeUpdate, *, user_id: int) -> MistakeOut:
     mistake = MistakeRepository.get_by_id(db, mistake_id, user_id=user_id)
     if mistake is None:
         raise_not_found("mistake", mistake_id)
@@ -156,7 +156,7 @@ def update_mistake(db: Session, mistake_id: int, payload: MistakeUpdate, user_id
     return _serialize_mistake(hydrated)
 
 
-def delete_mistake(db: Session, mistake_id: int, user_id: Optional[int] = None) -> None:
+def delete_mistake(db: Session, mistake_id: int, *, user_id: int) -> None:
     mistake = MistakeRepository.get_by_id(db, mistake_id, user_id=user_id)
     if mistake is None:
         raise_not_found("mistake", mistake_id)
