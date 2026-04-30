@@ -5,6 +5,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 
 from app.api.errors import error_payload
 from app.api.routes import api_router
@@ -31,6 +33,42 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+class BodySizeLimitMiddleware(BaseHTTPMiddleware):
+    """Reject incoming bodies whose Content-Length exceeds the configured cap.
+
+    Defends /import/v3 and any other JSON-heavy endpoint from OOM attacks
+    where an attacker uploads a multi-GB payload. Content-Length is checked
+    pre-routing so we never buffer the full body. Chunked transfer encoding
+    (no Content-Length header) is not handled here; it remains rate-limited
+    upstream and fenced by Pydantic max_length limits at parse time.
+    """
+
+    MAX_BYTES = 50 * 1024 * 1024
+
+    async def dispatch(self, request: Request, call_next):
+        cl = request.headers.get("content-length")
+        if cl is not None and cl.isdigit() and int(cl) > self.MAX_BYTES:
+            origin = request.headers.get("origin")
+            headers: dict[str, str] = {}
+            if origin and origin in settings.cors_origins:
+                headers["access-control-allow-origin"] = origin
+                headers["access-control-allow-credentials"] = "true"
+                headers["vary"] = "Origin"
+            return JSONResponse(
+                status_code=413,
+                content=error_payload(
+                    "payload_too_large",
+                    f"Payload exceeds limit of {self.MAX_BYTES // (1024 * 1024)} MB.",
+                    {"max_bytes": self.MAX_BYTES},
+                ),
+                headers=headers,
+            )
+        return await call_next(request)
+
+
+app.add_middleware(BodySizeLimitMiddleware)
 
 app.include_router(api_router, prefix=settings.api_v1_prefix)
 

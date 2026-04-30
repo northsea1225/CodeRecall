@@ -139,9 +139,9 @@ class ImportPayloadV3(BaseModel):
     format: str = "coderecall"
     schema_version: int = 3
     exported_at: Optional[datetime] = None
-    categories: list[ImportCategory] = Field(default_factory=list)
-    tags: list[ImportTag] = Field(default_factory=list)
-    mistakes: list[ExportMistakeV3] = Field(default_factory=list)
-    review_sessions: list[ExportReviewSession] = Field(default_factory=list)
-    review_session_items: list[ExportReviewSessionItem] = Field(default_factory=list)
-    review_logs: list[ExportReviewLog] = Field(default_factory=list)
+    categories: list[ImportCategory] = Field(default_factory=list, max_length=1000)
+    tags: list[ImportTag] = Field(default_factory=list, max_length=10000)
+    mistakes: list[ExportMistakeV3] = Field(default_factory=list, max_length=10000)
+    review_sessions: list[ExportReviewSession] = Field(default_factory=list, max_length=10000)
+    review_session_items: list[ExportReviewSessionItem] = Field(default_factory=list, max_length=100000)
+    review_logs: list[ExportReviewLog] = Field(default_factory=list, max_length=200000)
