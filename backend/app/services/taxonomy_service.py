@@ -49,17 +49,19 @@ def normalize_tag_names(tag_names: Iterable[str]) -> list[str]:
     return normalized_names
 
 
-def list_categories(db: Session, user_id: Optional[int] = None) -> list[Category]:
-    statement = select(Category).order_by(Category.created_at.desc(), Category.id.desc())
-    if user_id is not None:
-        statement = statement.where(Category.user_id == user_id)
+def list_categories(db: Session, *, user_id: int) -> list[Category]:
+    statement = (
+        select(Category)
+        .where(Category.user_id == user_id)
+        .order_by(Category.created_at.desc(), Category.id.desc())
+    )
     return list(db.scalars(statement).all())
 
 
-def get_category(db: Session, category_id: int, user_id: Optional[int] = None) -> Category:
-    statement = select(Category).where(Category.id == category_id)
-    if user_id is not None:
-        statement = statement.where(Category.user_id == user_id)
+def get_category(db: Session, category_id: int, *, user_id: int) -> Category:
+    statement = select(Category).where(
+        Category.id == category_id, Category.user_id == user_id
+    )
     category = db.scalar(statement)
     if category is None:
         raise_not_found("category", category_id)
@@ -69,8 +71,9 @@ def get_category(db: Session, category_id: int, user_id: Optional[int] = None) -
 def _validate_parent_category(
     db: Session,
     parent_id: Optional[int],
+    *,
+    user_id: int,
     current_id: Optional[int] = None,
-    user_id: Optional[int] = None,
 ) -> None:
     if parent_id is None:
         return
@@ -99,7 +102,7 @@ def _flush_or_raise_duplicate(db: Session, *, entity: str, name: str) -> None:
         )
 
 
-def create_category(db: Session, payload: CategoryCreate, user_id: Optional[int] = None) -> Category:
+def create_category(db: Session, payload: CategoryCreate, *, user_id: int) -> Category:
     _validate_parent_category(db, payload.parent_id, user_id=user_id)
 
     category = Category(
@@ -118,7 +121,7 @@ def create_category(db: Session, payload: CategoryCreate, user_id: Optional[int]
     return category
 
 
-def update_category(db: Session, category_id: int, payload: CategoryUpdate, user_id: Optional[int] = None) -> Category:
+def update_category(db: Session, category_id: int, payload: CategoryUpdate, *, user_id: int) -> Category:
     category = get_category(db, category_id, user_id=user_id)
     updates = payload.model_dump(exclude_unset=True)
 
@@ -127,7 +130,7 @@ def update_category(db: Session, category_id: int, payload: CategoryUpdate, user
     if "description" in updates:
         category.description = normalize_optional_text(updates["description"]) or ""
     if "parent_id" in updates:
-        _validate_parent_category(db, updates["parent_id"], current_id=category.id, user_id=user_id)
+        _validate_parent_category(db, updates["parent_id"], user_id=user_id, current_id=category.id)
         category.parent_id = updates["parent_id"]
     if "sort_order" in updates:
         category.sort_order = updates["sort_order"]
@@ -149,7 +152,7 @@ def update_category(db: Session, category_id: int, payload: CategoryUpdate, user
     return category
 
 
-def delete_category(db: Session, category_id: int, user_id: Optional[int] = None) -> DeleteResponse:
+def delete_category(db: Session, category_id: int, *, user_id: int) -> DeleteResponse:
     category = get_category(db, category_id, user_id=user_id)
     db.delete(category)
 
@@ -167,34 +170,36 @@ def delete_category(db: Session, category_id: int, user_id: Optional[int] = None
     return DeleteResponse(id=category_id, deleted=True)
 
 
-def list_tags(db: Session, user_id: Optional[int] = None) -> list[Tag]:
-    statement = select(Tag).order_by(Tag.created_at.desc(), Tag.id.desc())
-    if user_id is not None:
-        statement = statement.where(Tag.user_id == user_id)
+def list_tags(db: Session, *, user_id: int) -> list[Tag]:
+    statement = (
+        select(Tag)
+        .where(Tag.user_id == user_id)
+        .order_by(Tag.created_at.desc(), Tag.id.desc())
+    )
     return list(db.scalars(statement).all())
 
 
-def get_tag(db: Session, tag_id: int, user_id: Optional[int] = None) -> Tag:
-    statement = select(Tag).where(Tag.id == tag_id)
-    if user_id is not None:
-        statement = statement.where(Tag.user_id == user_id)
+def get_tag(db: Session, tag_id: int, *, user_id: int) -> Tag:
+    statement = select(Tag).where(Tag.id == tag_id, Tag.user_id == user_id)
     tag = db.scalar(statement)
     if tag is None:
         raise_not_found("tag", tag_id)
     return tag
 
 
-def get_tags_by_names(db: Session, tag_names: list[str], user_id: Optional[int] = None) -> list[Tag]:
+def get_tags_by_names(db: Session, tag_names: list[str], *, user_id: int) -> list[Tag]:
     if not tag_names:
         return []
 
-    statement = select(Tag).where(Tag.name.in_(tag_names)).order_by(Tag.id.asc())
-    if user_id is not None:
-        statement = statement.where(Tag.user_id == user_id)
+    statement = (
+        select(Tag)
+        .where(Tag.name.in_(tag_names), Tag.user_id == user_id)
+        .order_by(Tag.id.asc())
+    )
     return list(db.scalars(statement).all())
 
 
-def get_or_create_tags(db: Session, tag_names: Iterable[str], user_id: Optional[int] = None) -> list[Tag]:
+def get_or_create_tags(db: Session, tag_names: Iterable[str], *, user_id: int) -> list[Tag]:
     normalized_names = normalize_tag_names(tag_names)
     if not normalized_names:
         return []
@@ -218,7 +223,7 @@ def get_or_create_tags(db: Session, tag_names: Iterable[str], user_id: Optional[
     return ordered_tags
 
 
-def create_tag(db: Session, payload: TagCreate, user_id: Optional[int] = None) -> Tag:
+def create_tag(db: Session, payload: TagCreate, *, user_id: int) -> Tag:
     tag = Tag(
         user_id=user_id,
         name=normalize_required_text(payload.name, field_name="name"),
@@ -232,7 +237,7 @@ def create_tag(db: Session, payload: TagCreate, user_id: Optional[int] = None) -
     return tag
 
 
-def update_tag(db: Session, tag_id: int, payload: TagUpdate, user_id: Optional[int] = None) -> Tag:
+def update_tag(db: Session, tag_id: int, payload: TagUpdate, *, user_id: int) -> Tag:
     tag = get_tag(db, tag_id, user_id=user_id)
     updates = payload.model_dump(exclude_unset=True)
 
@@ -256,7 +261,7 @@ def update_tag(db: Session, tag_id: int, payload: TagUpdate, user_id: Optional[i
     return tag
 
 
-def delete_tag(db: Session, tag_id: int, user_id: Optional[int] = None) -> DeleteResponse:
+def delete_tag(db: Session, tag_id: int, *, user_id: int) -> DeleteResponse:
     tag = get_tag(db, tag_id, user_id=user_id)
     db.delete(tag)
     db.commit()
