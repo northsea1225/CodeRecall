@@ -16,13 +16,12 @@ def _mistake_loader_options():
     )
 
 
-def select_session_mistakes(db: Session, strategy: str, limit: int, user_id: int | None = None) -> list[Mistake]:
-    ownership_filter = [Mistake.user_id == user_id] if user_id is not None else []
+def select_session_mistakes(db: Session, strategy: str, limit: int, *, user_id: int) -> list[Mistake]:
     if strategy == "random":
         statement = (
             select(Mistake)
             .options(*_mistake_loader_options())
-            .where(Mistake.is_archived.is_(False), *ownership_filter)
+            .where(Mistake.is_archived.is_(False), Mistake.user_id == user_id)
             .order_by(func.random())
             .limit(limit)
         )
@@ -40,7 +39,7 @@ def select_session_mistakes(db: Session, strategy: str, limit: int, user_id: int
         .options(*_mistake_loader_options())
         .where(
             Mistake.is_archived.is_(False),
-            *ownership_filter,
+            Mistake.user_id == user_id,
             Mistake.next_review_at.is_not(None),
             Mistake.next_review_at <= now,
         )
@@ -50,15 +49,14 @@ def select_session_mistakes(db: Session, strategy: str, limit: int, user_id: int
     return list(db.scalars(due_statement).all())
 
 
-def count_due_mistakes(db: Session, user_id: int | None = None) -> tuple[int, datetime]:
+def count_due_mistakes(db: Session, *, user_id: int) -> tuple[int, datetime]:
     now = utc_now()
-    ownership_filter = [Mistake.user_id == user_id] if user_id is not None else []
     statement = (
         select(func.count())
         .select_from(Mistake)
         .where(
             Mistake.is_archived.is_(False),
-            *ownership_filter,
+            Mistake.user_id == user_id,
             Mistake.next_review_at.is_not(None),
             Mistake.next_review_at <= now,
         )

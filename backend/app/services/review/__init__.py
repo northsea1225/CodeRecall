@@ -34,10 +34,11 @@ def _coerce_utc(value: datetime) -> datetime:
     return value
 
 
-def _get_session(db: Session, session_id: int, user_id: int | None = None) -> ReviewSession:
-    statement = select(ReviewSession).where(ReviewSession.id == session_id)
-    if user_id is not None:
-        statement = statement.where(ReviewSession.user_id == user_id)
+def _get_session(db: Session, session_id: int, *, user_id: int) -> ReviewSession:
+    statement = (
+        select(ReviewSession)
+        .where(ReviewSession.id == session_id, ReviewSession.user_id == user_id)
+    )
     session = db.scalar(statement)
     if session is None:
         raise_not_found("review_session", session_id)
@@ -77,15 +78,16 @@ def _serialize_review_log(log: ReviewLog, *, progress: ReviewProgressOut) -> Rev
     return ReviewSubmitOut(**payload, progress=progress)
 
 
-def _count_completed(db: Session, session_id: int, user_id: int | None = None) -> int:
-    filters = [ReviewLog.session_id == session_id]
-    if user_id is not None:
-        filters.append(ReviewLog.user_id == user_id)
-    statement = select(func.count()).select_from(ReviewLog).where(*filters)
+def _count_completed(db: Session, session_id: int, *, user_id: int) -> int:
+    statement = (
+        select(func.count())
+        .select_from(ReviewLog)
+        .where(ReviewLog.session_id == session_id, ReviewLog.user_id == user_id)
+    )
     return int(db.scalar(statement) or 0)
 
 
-def _progress_for_session(db: Session, session: ReviewSession, user_id: int | None = None) -> ReviewProgressOut:
+def _progress_for_session(db: Session, session: ReviewSession, *, user_id: int) -> ReviewProgressOut:
     completed = _count_completed(db, session.id, user_id=user_id)
     if session.completed_count != completed:
         session.completed_count = completed
@@ -101,7 +103,7 @@ def _mark_session_completed_if_needed(db: Session, session: ReviewSession, *, pr
         db.refresh(session)
 
 
-def start_session(db: Session, strategy: str, limit: int, user_id: int | None = None) -> ReviewSessionOut:
+def start_session(db: Session, strategy: str, limit: int, *, user_id: int) -> ReviewSessionOut:
     started_at = utc_now()
     session = ReviewSession(
         user_id=user_id,
@@ -147,7 +149,7 @@ def start_session(db: Session, strategy: str, limit: int, user_id: int | None = 
     )
 
 
-def get_next_item(db: Session, session_id: int, user_id: int | None = None) -> ReviewNextOut:
+def get_next_item(db: Session, session_id: int, *, user_id: int) -> ReviewNextOut:
     session = _get_session(db, session_id, user_id=user_id)
     progress = _progress_for_session(db, session, user_id=user_id)
 
@@ -170,7 +172,8 @@ def submit_result(
     shown_at: Optional[datetime] = None,
     time_spent_ms: Optional[int] = None,
     note: Optional[str] = None,
-    user_id: int | None = None,
+    *,
+    user_id: int,
 ) -> ReviewSubmitOut:
     session = _get_session(db, session_id, user_id=user_id)
     log = record_review_log(
@@ -187,21 +190,18 @@ def submit_result(
     return _serialize_review_log(log, progress=progress)
 
 
-def get_reveal(db: Session, mistake_id: int, user_id: int | None = None) -> ReviewRevealOut:
-    filters = [Mistake.id == mistake_id]
-    if user_id is not None:
-        filters.append(Mistake.user_id == user_id)
+def get_reveal(db: Session, mistake_id: int, *, user_id: int) -> ReviewRevealOut:
     mistake = db.scalar(
         select(Mistake)
         .options(joinedload(Mistake.category), selectinload(Mistake.tags))
-        .where(*filters)
+        .where(Mistake.id == mistake_id, Mistake.user_id == user_id)
     )
     if mistake is None:
         raise_not_found("mistake", mistake_id)
     return _serialize_reveal(mistake)
 
 
-def get_summary(db: Session, session_id: int, user_id: int | None = None) -> ReviewSummaryOut:
+def get_summary(db: Session, session_id: int, *, user_id: int) -> ReviewSummaryOut:
     session = _get_session(db, session_id, user_id=user_id)
     progress = _progress_for_session(db, session, user_id=user_id)
     _mark_session_completed_if_needed(db, session, progress=progress)
@@ -209,10 +209,7 @@ def get_summary(db: Session, session_id: int, user_id: int | None = None) -> Rev
     counts = {result.value: 0 for result in ReviewResult}
     rows = db.execute(
         select(ReviewLog.user_result, func.count())
-        .where(
-            ReviewLog.session_id == session.id,
-            *( [ReviewLog.user_id == user_id] if user_id is not None else [] ),
-        )
+        .where(ReviewLog.session_id == session.id, ReviewLog.user_id == user_id)
         .group_by(ReviewLog.user_result)
     ).all()
     for result, count in rows:
@@ -241,6 +238,6 @@ def get_capability() -> ReviewCapabilityOut:
     )
 
 
-def get_due_count(db: Session, user_id: int | None = None) -> ReviewDueCountOut:
+def get_due_count(db: Session, *, user_id: int) -> ReviewDueCountOut:
     due_count, as_of = count_due_mistakes(db, user_id=user_id)
     return ReviewDueCountOut(due_count=due_count, as_of=as_of)
