@@ -1,13 +1,14 @@
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from fastapi import APIRouter, Body, Depends, Query
+from fastapi import APIRouter, Body, Depends, Query, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.api.errors import raise_api_error
+from app.core.limiter import limiter
 from app.db.session import get_db
 from app.models import User
 from app.schemas.import_export import ExportResponse, ExportResponseV3, ImportPayload, ImportPayloadV3, ImportResponse
@@ -74,7 +75,9 @@ def import_route(
 
 
 @router.post("/import/v3", response_model=ImportResponse)
+@limiter.limit("5/hour")
 def import_v3_route(
+    request: Request,
     payload: ImportPayloadV3,
     strategy: str = Query(default="skip_existing"),
     db: Session = Depends(get_db),

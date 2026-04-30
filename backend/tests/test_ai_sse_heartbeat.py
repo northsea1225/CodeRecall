@@ -4,7 +4,21 @@ import asyncio
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from starlette.requests import Request
+
 from app.api.routes.ai import analyze_stream_route
+
+
+def _build_request() -> Request:
+    scope = {
+        "type": "http",
+        "method": "GET",
+        "path": "/api/v1/ai/analyze/stream",
+        "headers": [],
+        "client": ("127.0.0.1", 0),
+        "query_string": b"",
+    }
+    return Request(scope)
 
 
 class _FakeDBSession:
@@ -31,7 +45,12 @@ def test_ai_stream_emits_keepalive_comment_when_provider_is_silent() -> None:
             patch("app.api.routes.ai.get_ai_capability", return_value={"enabled": True, "model": "mock-model"}),
             patch("app.api.routes.ai.build_provider", return_value=_SilentProvider()),
         ):
-            response = await analyze_stream_route(mistake_id=1, db=fake_db, current_user=SimpleNamespace(id=1))
+            response = await analyze_stream_route(
+                request=_build_request(),
+                mistake_id=1,
+                db=fake_db,
+                current_user=SimpleNamespace(id=1),
+            )
             chunks: list[str] = []
             try:
                 async for chunk in response.body_iterator:

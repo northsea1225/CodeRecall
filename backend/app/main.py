@@ -4,10 +4,12 @@ from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
 
 from app.api.errors import error_payload
 from app.api.routes import api_router
 from app.core.config import settings
+from app.core.limiter import limiter
 from app.db.init_db import initialize_database, should_initialize_database
 
 
@@ -20,6 +22,8 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
 
+app.state.limiter = limiter
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -29,6 +33,18 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix=settings.api_v1_prefix)
+
+
+@app.exception_handler(RateLimitExceeded)
+async def handle_rate_limit_exceeded(_, exc: RateLimitExceeded) -> JSONResponse:
+    return JSONResponse(
+        status_code=429,
+        content=error_payload(
+            "rate_limit_exceeded",
+            "Too many requests. Please slow down and try again later.",
+            {"limit": str(exc.limit.limit) if getattr(exc, "limit", None) else None},
+        ),
+    )
 
 
 @app.exception_handler(HTTPException)

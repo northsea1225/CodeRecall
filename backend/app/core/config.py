@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
     access_token_expire_minutes: int = Field(default=10080, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
     old_user_initial_password: str = Field(default="", alias="OLD_USER_INITIAL_PASSWORD")
+    rate_limit_enabled: bool = Field(default=True, alias="RATE_LIMIT_ENABLED")
 
     model_config = SettingsConfigDict(
         env_file=".env",

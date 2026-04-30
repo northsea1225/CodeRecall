@@ -20,3 +20,4 @@ bcrypt==4.0.1
 # python-dotenv 1.2.2 fix requires Python 3.10+; locked at 1.2.1 here (transitive via pydantic-settings).
 # Known CVE accepted (see SECURITY.md): GHSA-mf9w-mj56-hr94 (MODERATE, not triggered — no set_key/unset_key calls).
 python-dotenv>=1.2.1,<1.2.2
+slowapi~=0.1

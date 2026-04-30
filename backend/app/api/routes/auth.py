@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.api.errors import raise_api_error
+from app.core.limiter import limiter
 from app.db.session import get_db
 from app.models import User
 from app.services.auth_service import (
@@ -55,7 +56,9 @@ def _auth_response(user: User) -> AuthOut:
 
 
 @router.post("/token", response_model=AuthOut)
+@limiter.limit("10/minute;100/hour")
 def login_route(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ) -> AuthOut:
@@ -66,7 +69,8 @@ def login_route(
 
 
 @router.post("/register", response_model=AuthOut)
-def register_route(payload: RegisterIn, db: Session = Depends(get_db)) -> AuthOut:
+@limiter.limit("3/hour;10/day")
+def register_route(request: Request, payload: RegisterIn, db: Session = Depends(get_db)) -> AuthOut:
     user = create_user(db, payload.username, payload.password)
     return _auth_response(user)
 

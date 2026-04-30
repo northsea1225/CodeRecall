@@ -5,7 +5,7 @@ from contextlib import suppress
 import json
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.deps import get_current_user
 from app.api.errors import raise_api_error
+from app.core.limiter import limiter
 from app.db.session import get_db
 from app.models import Mistake, User
 from app.services.ai_analysis_service import AiAnalysisError, build_provider, get_ai_capability
@@ -29,7 +30,9 @@ class VariantOut(BaseModel):
 
 
 @router.get("/analyze/stream")
+@limiter.limit("30/minute")
 async def analyze_stream_route(
+    request: Request,
     mistake_id: int = Query(..., ge=1),
     model: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
@@ -120,7 +123,9 @@ async def analyze_stream_route(
 
 
 @router.post("/generate-variant/{mistake_id}", response_model=VariantOut)
+@limiter.limit("30/minute")
 async def generate_variant_route(
+    request: Request,
     mistake_id: int,
     model: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
