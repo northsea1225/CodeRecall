@@ -5,6 +5,7 @@ import { createBrowserRouter, Navigate, Outlet, useLocation, useNavigate } from 
 
 import { useAuthStore } from "./stores/authStore";
 import { useUIStore } from "./stores/uiStore";
+import { routerBridge } from "./utils/routerBridge";
 
 const DashboardPage = lazy(() => import("./pages/Dashboard"));
 const ImportExportPage = lazy(() => import("./pages/ImportExport"));
@@ -153,3 +154,7 @@ export const router = createBrowserRouter([
     ],
   },
 ]);
+
+routerBridge.register((to, opts) => {
+  void router.navigate(to, opts);
+});

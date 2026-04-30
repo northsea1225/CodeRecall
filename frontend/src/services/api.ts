@@ -1,6 +1,7 @@
 import axios, { AxiosError } from "axios";
 
 import { useAuthStore } from "../stores/authStore";
+import { routerBridge } from "../utils/routerBridge";
 
 export interface ApiErrorPayload {
   code?: string;
@@ -58,9 +59,7 @@ api.interceptors.response.use(
   (error: AxiosError<ApiErrorPayload>) => {
     if (error.response?.status === 401) {
       useAuthStore.getState().logout();
-      if (typeof document !== "undefined") {
-        void import("../routes").then(({ router }) => router.navigate("/login", { replace: true }));
-      }
+      routerBridge.navigate("/login", { replace: true });
     }
     const payload = error.response?.data;
     return Promise.reject(

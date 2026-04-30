@@ -49,7 +49,7 @@ describe("authStore", () => {
 
       useAuthStore.getState().initializeAuth();
 
-      const state = useAuthStore.getState() as Record<string, unknown>;
+      const state = useAuthStore.getState() as unknown as Record<string, unknown>;
       expect(state.token).toBe(token);
       expect(state.username).toBe("alice");
       expect(state.userId).toBe(7);
