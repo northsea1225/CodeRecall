@@ -5,6 +5,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Optional
 from uuid import uuid4
 
+import sqlalchemy as sa
 from sqlalchemy import Boolean, CheckConstraint, DateTime, Enum as SqlEnum, Float, ForeignKey, Index
 from sqlalchemy import Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -15,6 +16,7 @@ if TYPE_CHECKING:
     from app.models.category import Category
     from app.models.review import ReviewLog
     from app.models.tag import Tag
+    from app.models.user import User
 
 
 class MistakeStatus(str, Enum):
@@ -29,17 +31,23 @@ class Mistake(Base):
     __table_args__ = (
         CheckConstraint("difficulty >= 1 AND difficulty <= 5", name="ck_mistakes_difficulty_range"),
         Index("ix_mistakes_status_next_review_at", "status", "next_review_at"),
+        Index(
+            "ix_mistakes_user_uuid",
+            "user_id",
+            "uuid",
+            unique=True,
+            sqlite_where=sa.text("uuid IS NOT NULL"),
+        ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     uuid: Mapped[Optional[str]] = mapped_column(
         String(36),
-        unique=True,
-        index=True,
         nullable=True,
         default=lambda: str(uuid4()),
     )
     title: Mapped[str] = mapped_column(String(255), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
     stem_markdown: Mapped[str] = mapped_column(Text)
     wrong_answer_markdown: Mapped[str] = mapped_column(Text)
     correct_answer_markdown: Mapped[str] = mapped_column(Text)
@@ -77,6 +85,7 @@ class Mistake(Base):
         nullable=False,
     )
 
+    owner: Mapped["User"] = relationship("User", back_populates="mistakes")
     category: Mapped["Category"] = relationship("Category", back_populates="mistakes")
     tags: Mapped[list["Tag"]] = relationship(
         "Tag",

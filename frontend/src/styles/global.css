@@ -40,6 +40,8 @@ body {
 
 .app-sider .ant-layout-sider-children {
   background: transparent;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-sider .ant-menu {
@@ -583,3 +585,57 @@ body {
 .onboarding-diff-card .diff-del { color: var(--onboarding-diff-del); }
 .onboarding-diff-card .diff-add { color: var(--onboarding-diff-add); }
 .onboarding-diff-card .diff-info { color: var(--onboarding-diff-info); margin-top: 8px; }
+
+/* Immersive review mode */
+.review-immersive-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px;
+  background: var(--bg-canvas, var(--app-layout-bg));
+}
+
+.review-immersive-shell > * {
+  width: 100%;
+  max-width: 900px;
+}
+
+.review-immersive-exit {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 100;
+}
+
+@media (max-width: 768px) {
+  .review-immersive-entry {
+    display: none;
+  }
+}
+
+/* Dashboard 4-column metric grid */
+.dashboard-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .dashboard-metric-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Sider user footer */
+.sider-user-footer {
+  margin-top: auto;
+  padding: 12px 16px;
+  border-top: 1px solid var(--app-sider-border);
+}
+
+.sider-username {
+  color: var(--app-sider-nav-color);
+  font-size: 13px;
+  margin-bottom: 4px;
+}

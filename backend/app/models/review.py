@@ -11,6 +11,7 @@ from app.db.base import Base
 
 if TYPE_CHECKING:
     from app.models.mistake import Mistake
+    from app.models.user import User
 
 
 class ReviewResult(str, Enum):
@@ -24,6 +25,7 @@ class ReviewSession(Base):
     __tablename__ = "review_sessions"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -35,6 +37,7 @@ class ReviewSession(Base):
     total_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     completed_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
+    owner: Mapped["User"] = relationship("User", back_populates="review_sessions")
     review_logs: Mapped[list["ReviewLog"]] = relationship(
         "ReviewLog",
         back_populates="session",
@@ -72,6 +75,7 @@ class ReviewLog(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
     mistake_id: Mapped[int] = mapped_column(ForeignKey("mistakes.id", ondelete="CASCADE"), index=True)
     session_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("review_sessions.id", ondelete="SET NULL"),
@@ -96,5 +100,6 @@ class ReviewLog(Base):
     time_spent_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     note: Mapped[str] = mapped_column(Text, default="", server_default="")
 
+    owner: Mapped["User"] = relationship("User", back_populates="review_logs")
     mistake: Mapped["Mistake"] = relationship("Mistake", back_populates="review_logs")
     session: Mapped[Optional["ReviewSession"]] = relationship("ReviewSession", back_populates="review_logs")

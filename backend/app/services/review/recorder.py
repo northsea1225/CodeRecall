@@ -19,6 +19,7 @@ def record_review_log(
     shown_at: Optional[datetime],
     time_spent_ms: Optional[int],
     note: Optional[str],
+    user_id: int | None = None,
 ) -> ReviewLog:
     queue_item = db.scalar(
         select(ReviewSessionItem).where(
@@ -43,12 +44,16 @@ def record_review_log(
     if existing is not None:
         return existing
 
-    mistake = db.get(Mistake, mistake_id)
+    statement = select(Mistake).where(Mistake.id == mistake_id)
+    if user_id is not None:
+        statement = statement.where(Mistake.user_id == user_id)
+    mistake = db.scalar(statement)
     if mistake is None:
         raise_not_found("mistake", mistake_id)
 
     answered_at = utc_now()
     log = ReviewLog(
+        user_id=session.user_id,
         mistake_id=mistake.id,
         session_id=session.id,
         review_mode=session.strategy,

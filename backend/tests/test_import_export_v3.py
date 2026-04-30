@@ -20,7 +20,7 @@ if str(BACKEND_DIR) not in sys.path:
 
 from app.db.init_db import initialize_database
 from app.db.session import _connect_args
-from app.models import Category, Mistake, ReviewLog, ReviewResult, ReviewSession, ReviewSessionItem, Tag
+from app.models import Category, Mistake, ReviewLog, ReviewResult, ReviewSession, ReviewSessionItem, Tag, User
 from app.services.import_export_service import export_data_v3, import_data_v3
 
 
@@ -36,15 +36,22 @@ class ExportDataV3Tests(unittest.TestCase):
         self.engine.dispose()
         self.tempdir.cleanup()
 
+    def _old_user_id(self, db) -> int:
+        user_id = db.query(User.id).filter(User.username == "old_user").scalar()
+        self.assertIsNotNone(user_id)
+        return user_id
+
     def _seed_review_graph(self) -> tuple[int, int]:
         with self.SessionLocal() as db:
-            category = Category(name="数组", description="数组与哈希")
-            tag_a = Tag(name="哈希")
-            tag_b = Tag(name="边界")
+            user_id = self._old_user_id(db)
+            category = Category(user_id=user_id, name="数组", description="数组与哈希")
+            tag_a = Tag(user_id=user_id, name="哈希")
+            tag_b = Tag(user_id=user_id, name="边界")
             db.add_all([category, tag_a, tag_b])
             db.flush()
 
             first = Mistake(
+                user_id=user_id,
                 title="两数之和补数顺序错",
                 stem_markdown="给定 nums 和 target",
                 wrong_answer_markdown="for i in nums: pass",
@@ -58,6 +65,7 @@ class ExportDataV3Tests(unittest.TestCase):
             first.tags = [tag_a, tag_b]
 
             second = Mistake(
+                user_id=user_id,
                 title="滑动窗口收缩条件错",
                 stem_markdown="最短覆盖子串",
                 wrong_answer_markdown="left += 1",
@@ -73,6 +81,7 @@ class ExportDataV3Tests(unittest.TestCase):
             db.flush()
 
             session = ReviewSession(
+                user_id=user_id,
                 started_at=datetime(2026, 4, 23, 12, 0, tzinfo=timezone.utc),
                 ended_at=datetime(2026, 4, 23, 12, 10, tzinfo=timezone.utc),
                 strategy="random",
@@ -87,6 +96,7 @@ class ExportDataV3Tests(unittest.TestCase):
                     ReviewSessionItem(session_id=session.id, mistake_id=first.id, order_index=0),
                     ReviewSessionItem(session_id=session.id, mistake_id=second.id, order_index=1),
                     ReviewLog(
+                        user_id=user_id,
                         mistake_id=first.id,
                         session_id=session.id,
                         review_mode="manual",
@@ -101,6 +111,7 @@ class ExportDataV3Tests(unittest.TestCase):
                         note="首轮通过",
                     ),
                     ReviewLog(
+                        user_id=user_id,
                         mistake_id=second.id,
                         session_id=session.id,
                         review_mode="manual",
@@ -170,18 +181,20 @@ class ExportDataV3Tests(unittest.TestCase):
         self.assertEqual(payload.review_logs[0].note, "首轮通过")
         self.assertEqual(payload.review_logs[1].user_result, "again")
 
-    def test_mistake_uuid_column_is_backed_by_unique_index(self) -> None:
+    def test_mistake_uuid_column_is_backed_by_per_user_unique_index(self) -> None:
         self._seed_review_graph()
         database_path = self.database_url.removeprefix("sqlite:///")
 
         with sqlite3.connect(database_path) as conn:
             uuid_rows = conn.execute("SELECT uuid FROM mistakes ORDER BY id").fetchall()
             indexes = conn.execute("PRAGMA index_list('mistakes')").fetchall()
+            index_columns = conn.execute("PRAGMA index_info('ix_mistakes_user_uuid')").fetchall()
 
         uuid_values = [row[0] for row in uuid_rows]
         self.assertEqual(len(uuid_values), len(set(uuid_values)))
         self.assertTrue(all(uuid_values))
-        self.assertTrue(any(index[1] == "ix_mistakes_uuid" and index[2] == 1 for index in indexes))
+        self.assertTrue(any(index[1] == "ix_mistakes_user_uuid" and index[2] == 1 for index in indexes))
+        self.assertEqual([column[2] for column in index_columns], ["user_id", "uuid"])
 
     def test_round_trip_imports_full_review_graph(self) -> None:
         payload = self._export_seeded_payload()
@@ -189,11 +202,12 @@ class ExportDataV3Tests(unittest.TestCase):
         TargetSessionLocal = self._make_target_session_local()
 
         with TargetSessionLocal() as db:
-            db.add(ReviewSession(strategy="placeholder", total_count=0, completed_count=0))
+            user_id = self._old_user_id(db)
+            db.add(ReviewSession(user_id=user_id, strategy="placeholder", total_count=0, completed_count=0))
             db.commit()
 
         with TargetSessionLocal() as db:
-            result = import_data_v3(db, payload, "skip_existing")
+            result = import_data_v3(db, payload, "skip_existing", user_id=self._old_user_id(db))
 
         self.assertEqual(result.imported.mistakes, 2)
         self.assertEqual(result.imported.review_sessions, 1)
@@ -213,24 +227,24 @@ class ExportDataV3Tests(unittest.TestCase):
         self.assertEqual([log.session_id for log in logs], [sessions[0].id, sessions[0].id])
         self.assertEqual([log.user_result for log in logs], [ReviewResult.GOOD, ReviewResult.AGAIN])
 
-    def test_second_import_skips_existing_uuid_but_imports_review(self) -> None:
+    def test_second_import_is_idempotent(self) -> None:
         payload = self._export_seeded_payload()
         TargetSessionLocal = self._make_target_session_local()
 
         with TargetSessionLocal() as db:
-            first_result = import_data_v3(db, payload, "skip_existing")
+            first_result = import_data_v3(db, payload, "skip_existing", user_id=self._old_user_id(db))
         with TargetSessionLocal() as db:
-            second_result = import_data_v3(db, payload, "skip_existing")
+            second_result = import_data_v3(db, payload, "skip_existing", user_id=self._old_user_id(db))
 
         self.assertEqual(first_result.imported.mistakes, 2)
         self.assertEqual(second_result.imported.mistakes, 0)
-        self.assertGreater(second_result.imported.review_sessions, 0)
-        self.assertGreater(second_result.imported.review_logs, 0)
+        self.assertEqual(second_result.imported.review_sessions, 0)
+        self.assertEqual(second_result.imported.review_logs, 0)
 
         with TargetSessionLocal() as db:
             self.assertEqual(db.query(Mistake).count(), 2)
-            self.assertEqual(db.query(ReviewSession).count(), 2)
-            self.assertEqual(db.query(ReviewLog).count(), 4)
+            self.assertEqual(db.query(ReviewSession).count(), 1)
+            self.assertEqual(db.query(ReviewLog).count(), 2)
 
     def test_skip_review_records_with_missing_mistake_uuid(self) -> None:
         payload = self._export_seeded_payload()
@@ -239,7 +253,7 @@ class ExportDataV3Tests(unittest.TestCase):
         TargetSessionLocal = self._make_target_session_local()
 
         with TargetSessionLocal() as db:
-            result = import_data_v3(db, payload, "skip_existing")
+            result = import_data_v3(db, payload, "skip_existing", user_id=self._old_user_id(db))
 
         self.assertEqual(result.imported.mistakes, 2)
         self.assertEqual(result.imported.review_logs, 1)
@@ -254,7 +268,7 @@ class ExportDataV3Tests(unittest.TestCase):
         TargetSessionLocal = self._make_target_session_local()
 
         with TargetSessionLocal() as db:
-            result = import_data_v3(db, payload, "skip_existing")
+            result = import_data_v3(db, payload, "skip_existing", user_id=self._old_user_id(db))
 
         self.assertEqual(result.imported.mistakes, 2)
         self.assertEqual(result.imported.review_logs, 1)
@@ -269,7 +283,7 @@ class ExportDataV3Tests(unittest.TestCase):
         TargetSessionLocal = self._make_target_session_local()
 
         with TargetSessionLocal() as db:
-            result = import_data_v3(db, payload, "skip_existing")
+            result = import_data_v3(db, payload, "skip_existing", user_id=self._old_user_id(db))
 
         self.assertEqual(result.imported.review_logs, 2)
         self.assertNotIn(

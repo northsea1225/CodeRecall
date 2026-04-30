@@ -9,13 +9,15 @@ import { useDraftStore } from "../../stores/draftStore";
 import demoData from "../../data/demoImportPayload.json";
 
 interface Props {
+  userId: number | null;
   onImported: () => void;
 }
 
-export default function OnboardingPage({ onImported }: Props) {
+export default function OnboardingPage({ userId, onImported }: Props) {
   const navigate = useNavigate();
   const [loadingDemo, setLoadingDemo] = useState(false);
   const patchDraft = useDraftStore((s) => s.patchDraft);
+  const importedKey = `coderecall_ever_imported_${userId}`;
 
   const handleUrlFilled = (data: ProblemUrlPreviewResponse) => {
     const patch = {
@@ -26,7 +28,7 @@ export default function OnboardingPage({ onImported }: Props) {
       tags: data.tags,
     };
     patchDraft("new", patch);
-    localStorage.setItem("coderecall_ever_imported", "1");
+    localStorage.setItem(importedKey, "1");
     void message.success("题面已抓取，请补充错误代码和错因");
     navigate("/mistakes/new");
   };
@@ -35,7 +37,7 @@ export default function OnboardingPage({ onImported }: Props) {
     setLoadingDemo(true);
     try {
       await importPayload(demoData as Parameters<typeof importPayload>[0], "skip_existing");
-      localStorage.setItem("coderecall_ever_imported", "1");
+      localStorage.setItem(importedKey, "1");
       onImported();
       void message.success("Demo 数据已载入");
     } catch {

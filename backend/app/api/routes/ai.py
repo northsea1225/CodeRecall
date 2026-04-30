@@ -11,9 +11,10 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.api.deps import get_current_user
 from app.api.errors import raise_api_error
 from app.db.session import get_db
-from app.models import Mistake
+from app.models import Mistake, User
 from app.services.ai_analysis_service import AiAnalysisError, build_provider, get_ai_capability
 
 
@@ -32,6 +33,7 @@ async def analyze_stream_route(
     mistake_id: int = Query(..., ge=1),
     model: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> StreamingResponse:
     capability = get_ai_capability()
     if not capability["enabled"]:
@@ -48,7 +50,10 @@ async def analyze_stream_route(
             selectinload(Mistake.tags),
             selectinload(Mistake.review_logs),
         )
-        .where(Mistake.id == mistake_id)
+        .where(
+            Mistake.id == mistake_id,
+            Mistake.user_id == current_user.id,
+        )
     )
     if mistake is None:
         raise_api_error(
@@ -119,6 +124,7 @@ async def generate_variant_route(
     mistake_id: int,
     model: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> VariantOut:
     capability = get_ai_capability()
     if not capability["enabled"]:
@@ -135,7 +141,10 @@ async def generate_variant_route(
             selectinload(Mistake.tags),
             selectinload(Mistake.review_logs),
         )
-        .where(Mistake.id == mistake_id)
+        .where(
+            Mistake.id == mistake_id,
+            Mistake.user_id == current_user.id,
+        )
     )
     if mistake is None:
         raise_api_error(

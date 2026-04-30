@@ -31,7 +31,7 @@ def test_ai_stream_emits_keepalive_comment_when_provider_is_silent() -> None:
             patch("app.api.routes.ai.get_ai_capability", return_value={"enabled": True, "model": "mock-model"}),
             patch("app.api.routes.ai.build_provider", return_value=_SilentProvider()),
         ):
-            response = await analyze_stream_route(mistake_id=1, db=fake_db)
+            response = await analyze_stream_route(mistake_id=1, db=fake_db, current_user=SimpleNamespace(id=1))
             chunks: list[str] = []
             try:
                 async for chunk in response.body_iterator:

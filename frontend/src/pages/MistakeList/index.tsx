@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 
 import { deleteMistake } from "../../services/mistakeService";
 import { listCategories } from "../../services/taxonomyService";
+import { useAuthStore } from "../../stores/authStore";
 import { useMistakeStore } from "../../stores/mistakeStore";
 import { useUIStore } from "../../stores/uiStore";
 import type { Category, Mistake } from "../../types/mistake";
@@ -35,6 +36,7 @@ export default function MistakeListPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const language = useUIStore((state) => state.language);
+  const userId = useAuthStore((s) => s.userId);
   const list = useMistakeStore((state) => state.list);
   const filters = useMistakeStore((state) => state.filters);
   const pagination = useMistakeStore((state) => state.pagination);
@@ -205,10 +207,10 @@ export default function MistakeListPage() {
 
   const shouldShowOnboarding =
     hasFetched && !loading && !error && isUnfiltered && pagination.total === 0 &&
-    !localStorage.getItem("coderecall_ever_imported");
+    !localStorage.getItem(`coderecall_ever_imported_${userId}`);
 
   if (shouldShowOnboarding) {
-    return <OnboardingPage onImported={() => { void fetchList(); }} />;
+    return <OnboardingPage userId={userId} onImported={() => { void fetchList(); }} />;
   }
 
   return (

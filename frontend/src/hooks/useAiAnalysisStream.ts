@@ -19,95 +19,147 @@ const readySnapshot: StreamSnapshot = {
   content: "",
   error: null,
 };
+const TOKEN_KEY = "coderecall_token";
+
+function getBearerToken(): string {
+  try {
+    const raw = localStorage.getItem(TOKEN_KEY);
+    return raw ? ((JSON.parse(raw) as { token?: string }).token ?? "") : "";
+  } catch {
+    return "";
+  }
+}
 
 export function useAiAnalysisStream() {
-  const sourceRef = useRef<EventSource | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const lastRequestRef = useRef<StreamRequest | null>(null);
   const [snapshot, setSnapshot] = useState<StreamSnapshot>(readySnapshot);
 
   const closeStream = useCallback(() => {
-    sourceRef.current?.close();
-    sourceRef.current = null;
+    abortRef.current?.abort();
+    abortRef.current = null;
   }, []);
 
   useEffect(() => closeStream, [closeStream]);
 
-  const startStream = useCallback(async (request: StreamRequest) => {
-    closeStream();
-    lastRequestRef.current = request;
-    setSnapshot({
-      status: "streaming",
-      content: "",
-      error: null,
-    });
+  const startStream = useCallback(
+    async (request: StreamRequest) => {
+      closeStream();
+      lastRequestRef.current = request;
+      setSnapshot({ status: "streaming", content: "", error: null });
 
-    const params = new URLSearchParams({
-      mistake_id: String(request.mistakeId),
-    });
-    if (request.model) {
-      params.set("model", request.model);
-    }
+      const ctrl = new AbortController();
+      abortRef.current = ctrl;
 
-    const source = new EventSource(`${apiBaseURL}/ai/analyze/stream?${params.toString()}`);
-    sourceRef.current = source;
+      const params = new URLSearchParams({ mistake_id: String(request.mistakeId) });
+      if (request.model) params.set("model", request.model);
 
-    source.onmessage = (event) => {
-      if (event.data === "[DONE]") {
-        closeStream();
-        setSnapshot((current) => ({
-          status: "completed",
-          content: current.content,
-          error: null,
-        }));
+      let response: Response;
+      try {
+        response = await fetch(`${apiBaseURL}/ai/analyze/stream?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${getBearerToken()}` },
+          signal: ctrl.signal,
+        });
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return;
+        setSnapshot({ status: "error", content: "", error: "AI 分析失败，请稍后重试。" });
         return;
       }
 
-      try {
-        const payload = JSON.parse(event.data) as { delta?: string };
-        if (!payload.delta) {
-          return;
-        }
-
-        setSnapshot((current) => ({
-          status: "streaming",
-          content: current.content + payload.delta,
-          error: null,
-        }));
-      } catch {
-        closeStream();
-        setSnapshot({
-          status: "error",
-          content: "",
-          error: "AI 流返回了无法解析的数据。",
-        });
-      }
-    };
-
-    source.onerror = (event) => {
-      const messageEvent = event as MessageEvent<string>;
-      closeStream();
-
-      if (messageEvent.data) {
+      if (!response.ok) {
+        let msg = "AI 分析失败，请稍后重试。";
         try {
-          const payload = JSON.parse(messageEvent.data) as { message?: string };
-          setSnapshot((current) => ({
-            status: "error",
-            content: current.content,
-            error: payload.message ?? "AI 分析失败。",
-          }));
-          return;
+          const body = (await response.json()) as unknown;
+          if (body && typeof body === "object") {
+            const detail = (body as { detail?: unknown }).detail;
+            const message = (body as { message?: unknown }).message;
+            if (typeof detail === "string") {
+              msg = detail;
+            } else if (typeof message === "string") {
+              msg = message;
+            }
+          }
         } catch {
-          // fall through to generic error message
+          /* ignore */
         }
+        setSnapshot({ status: "error", content: "", error: msg });
+        return;
       }
 
-      setSnapshot((current) => ({
-        status: "error",
-        content: current.content,
-        error: current.content ? "AI 流已中断。" : "AI 分析失败，请稍后重试。",
-      }));
-    };
-  }, [closeStream]);
+      const reader = response.body?.getReader();
+      if (!reader) {
+        setSnapshot({ status: "error", content: "", error: "AI 流不可用。" });
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const parts = buffer.split(/\r?\n\r?\n/);
+          buffer = parts.pop() ?? "";
+
+          for (const part of parts) {
+            let eventType = "message";
+            const dataLines: string[] = [];
+            for (const l of part.split(/\r?\n/)) {
+              if (l.startsWith("event: ")) eventType = l.slice(7).trim();
+              else if (l.startsWith("data: ")) dataLines.push(l.slice(6));
+            }
+            const dataLine = dataLines.join("\n");
+            if (!dataLine) continue;
+
+            if (eventType === "error") {
+              let errMsg = "AI 分析失败。";
+              try {
+                const errPayload = JSON.parse(dataLine) as { message?: string };
+                errMsg = errPayload.message ?? errMsg;
+              } catch {
+                /* use default */
+              }
+              setSnapshot((cur) => ({
+                status: "error",
+                content: cur.content,
+                error: errMsg,
+              }));
+              return;
+            }
+
+            if (dataLine === "[DONE]") {
+              setSnapshot((cur) => ({ status: "completed", content: cur.content, error: null }));
+              return;
+            }
+
+            try {
+              const payload = JSON.parse(dataLine) as { delta?: string };
+              if (payload.delta) {
+                setSnapshot((cur) => ({
+                  status: "streaming",
+                  content: cur.content + payload.delta,
+                  error: null,
+                }));
+              }
+            } catch {
+              /* malformed event — skip */
+            }
+          }
+        }
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return;
+        setSnapshot((cur) => ({
+          status: "error",
+          content: cur.content,
+          error: cur.content ? "AI 流已中断。" : "AI 分析失败，请稍后重试。",
+        }));
+      }
+    },
+    [closeStream],
+  );
 
   const stop = useCallback(() => {
     closeStream();

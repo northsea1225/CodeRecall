@@ -4,6 +4,7 @@ import { useStore } from "zustand";
 import { extractApiErrorMessage } from "../services/api";
 import { listMistakes as listMistakesService } from "../services/mistakeService";
 import type { Mistake, PaginationMeta } from "../types/mistake";
+import { useAuthStore } from "./authStore";
 
 export interface MistakeFilters {
   page: number;
@@ -96,6 +97,8 @@ export const createMistakeStore = (
       }),
     reset: () =>
       set({
+        list: [],
+        loading: false,
         filters: defaultFilters,
         pagination: defaultPagination,
         error: null,
@@ -104,6 +107,12 @@ export const createMistakeStore = (
   }));
 
 export const mistakeStore = createMistakeStore();
+
+useAuthStore.subscribe((state, prevState) => {
+  if (prevState.token && !state.token) {
+    mistakeStore.getState().reset();
+  }
+});
 
 export const useMistakeStore = <T,>(selector: (state: MistakeStoreState) => T): T =>
   useStore(mistakeStore, selector);

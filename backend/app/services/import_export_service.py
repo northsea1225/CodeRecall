@@ -60,7 +60,11 @@ def parse_export_include(include: Optional[str]) -> set[str]:
     return requested
 
 
-def export_data(db: Session, include: Iterable[str]) -> ExportResponse:
+def _owner_filter(model, user_id: int | None):
+    return [model.user_id == user_id] if user_id is not None else []
+
+
+def export_data(db: Session, include: Iterable[str], user_id: int | None = None) -> ExportResponse:
     selected = set(include)
     categories = []
     tags = []
@@ -73,7 +77,9 @@ def export_data(db: Session, include: Iterable[str]) -> ExportResponse:
                 "description": category.description,
             }
             for category in db.scalars(
-                select(Category).order_by(Category.created_at.desc(), Category.id.desc())
+                select(Category)
+                .where(*_owner_filter(Category, user_id))
+                .order_by(Category.created_at.desc(), Category.id.desc())
             ).all()
         ]
 
@@ -82,7 +88,9 @@ def export_data(db: Session, include: Iterable[str]) -> ExportResponse:
             {
                 "name": tag.name,
             }
-            for tag in db.scalars(select(Tag).order_by(Tag.created_at.desc(), Tag.id.desc())).all()
+            for tag in db.scalars(
+                select(Tag).where(*_owner_filter(Tag, user_id)).order_by(Tag.created_at.desc(), Tag.id.desc())
+            ).all()
         ]
 
     if "mistakes" in selected:
@@ -106,7 +114,9 @@ def export_data(db: Session, include: Iterable[str]) -> ExportResponse:
                 "is_archived": mistake.is_archived,
             }
             for mistake in db.scalars(
-                MistakeRepository._base_query().order_by(Mistake.created_at.desc(), Mistake.id.desc())
+                MistakeRepository._base_query()
+                .where(*_owner_filter(Mistake, user_id))
+                .order_by(Mistake.created_at.desc(), Mistake.id.desc())
             ).all()
         ]
 
@@ -120,7 +130,7 @@ def export_data(db: Session, include: Iterable[str]) -> ExportResponse:
     )
 
 
-def export_mistakes_v2(db: Session) -> list[dict[str, Any]]:
+def export_mistakes_v2(db: Session, user_id: int | None = None) -> list[dict[str, Any]]:
     """Export the mistakes-only v2 shape used by the batch round-trip flow."""
     return [
         {
@@ -143,7 +153,9 @@ def export_mistakes_v2(db: Session) -> list[dict[str, Any]]:
             "repetition": mistake.repetition,
         }
         for mistake in db.scalars(
-            MistakeRepository._base_query().order_by(Mistake.created_at.desc(), Mistake.id.desc())
+            MistakeRepository._base_query()
+            .where(*_owner_filter(Mistake, user_id))
+            .order_by(Mistake.created_at.desc(), Mistake.id.desc())
         ).all()
     ]
 
@@ -180,7 +192,7 @@ def _field_length_skip_reason(record) -> str | None:
     return None
 
 
-def import_data(db: Session, payload: ImportPayload, strategy: str) -> ImportResponse:
+def import_data(db: Session, payload: ImportPayload, strategy: str, user_id: int | None = None) -> ImportResponse:
     if payload.version != "v1":
         raise_api_error(
             400,
@@ -236,13 +248,16 @@ def import_data(db: Session, payload: ImportPayload, strategy: str) -> ImportRes
 
     try:
         for category_name, description in category_inputs.items():
-            existing_category = db.scalar(select(Category).where(Category.name == category_name))
+            existing_category = db.scalar(
+                select(Category).where(Category.name == category_name, *_owner_filter(Category, user_id))
+            )
             if existing_category is not None:
                 skipped.append(_skip("category", category_name, "already_exists"))
                 continue
 
             db.add(
                 Category(
+                    user_id=user_id,
                     name=category_name,
                     description=description,
                     created_at=utc_now(),
@@ -253,18 +268,20 @@ def import_data(db: Session, payload: ImportPayload, strategy: str) -> ImportRes
             imported["categories"] += 1
 
         for tag_name in sorted(tag_names):
-            existing_tag = db.scalar(select(Tag).where(Tag.name == tag_name))
+            existing_tag = db.scalar(select(Tag).where(Tag.name == tag_name, *_owner_filter(Tag, user_id)))
             if existing_tag is not None:
                 skipped.append(_skip("tag", tag_name, "already_exists"))
                 continue
 
-            db.add(Tag(name=tag_name, created_at=utc_now(), updated_at=utc_now()))
+            db.add(Tag(name=tag_name, user_id=user_id, created_at=utc_now(), updated_at=utc_now()))
             db.flush()
             imported["tags"] += 1
 
         for record in valid_mistakes:
             category_name = normalize_required_text(record.category_name, field_name="mistakes.category_name")
-            category = db.scalar(select(Category).where(Category.name == category_name))
+            category = db.scalar(
+                select(Category).where(Category.name == category_name, *_owner_filter(Category, user_id))
+            )
             if category is None:
                 raise_api_error(
                     400,
@@ -277,6 +294,7 @@ def import_data(db: Session, payload: ImportPayload, strategy: str) -> ImportRes
             normalized_language = normalize_required_text(record.language, field_name="mistakes.language")
             existing_mistake = MistakeRepository.find_existing(
                 db,
+                user_id=user_id,
                 title=normalized_title,
                 language=normalized_language,
                 category_id=category.id,
@@ -285,7 +303,7 @@ def import_data(db: Session, payload: ImportPayload, strategy: str) -> ImportRes
                 skipped.append(_skip("mistake", normalized_title, "already_exists"))
                 continue
 
-            tags = get_or_create_tags(db, record.tag_names)
+            tags = get_or_create_tags(db, record.tag_names, user_id=user_id)
             timestamp = utc_now()
             try:
                 status = MistakeStatus(record.status)
@@ -298,6 +316,7 @@ def import_data(db: Session, payload: ImportPayload, strategy: str) -> ImportRes
                 )
             mistake = Mistake(
                 title=normalized_title,
+                user_id=user_id,
                 stem_markdown=record.stem_markdown,
                 wrong_answer_markdown=record.wrong_answer_markdown,
                 correct_answer_markdown=record.correct_answer_markdown,
@@ -336,6 +355,7 @@ def import_mistakes_v2_records(
     db: Session,
     records: list[dict[str, Any]],
     strategy: str,
+    user_id: int | None = None,
 ) -> ImportResponse:
     mistakes = [
         ImportMistake(
@@ -362,6 +382,7 @@ def import_mistakes_v2_records(
         db,
         ImportPayload(version="v1", schema_version="v2", mistakes=mistakes),
         strategy,
+        user_id=user_id,
     )
 
 
@@ -372,7 +393,7 @@ def get_or_create_names(values: Iterable[str]) -> set[str]:
     }
 
 
-def import_data_v3(db: Session, payload: ImportPayloadV3, strategy: str) -> ImportResponse:
+def import_data_v3(db: Session, payload: ImportPayloadV3, strategy: str, user_id: int | None = None) -> ImportResponse:
     if payload.format != "coderecall" or payload.schema_version != 3:
         raise_api_error(
             400,
@@ -451,13 +472,16 @@ def import_data_v3(db: Session, payload: ImportPayloadV3, strategy: str) -> Impo
 
     try:
         for category_name, description in category_inputs.items():
-            existing_category = db.scalar(select(Category).where(Category.name == category_name))
+            existing_category = db.scalar(
+                select(Category).where(Category.name == category_name, *_owner_filter(Category, user_id))
+            )
             if existing_category is not None:
                 skipped.append(_skip("category", category_name, "already_exists"))
                 continue
 
             db.add(
                 Category(
+                    user_id=user_id,
                     name=category_name,
                     description=description,
                     created_at=utc_now(),
@@ -468,12 +492,12 @@ def import_data_v3(db: Session, payload: ImportPayloadV3, strategy: str) -> Impo
             imported["categories"] += 1
 
         for tag_name in sorted(tag_names):
-            existing_tag = db.scalar(select(Tag).where(Tag.name == tag_name))
+            existing_tag = db.scalar(select(Tag).where(Tag.name == tag_name, *_owner_filter(Tag, user_id)))
             if existing_tag is not None:
                 skipped.append(_skip("tag", tag_name, "already_exists"))
                 continue
 
-            db.add(Tag(name=tag_name, created_at=utc_now(), updated_at=utc_now()))
+            db.add(Tag(name=tag_name, user_id=user_id, created_at=utc_now(), updated_at=utc_now()))
             db.flush()
             imported["tags"] += 1
 
@@ -481,9 +505,16 @@ def import_data_v3(db: Session, payload: ImportPayloadV3, strategy: str) -> Impo
         uuid_to_id: dict[str, int] = {}
         if incoming_uuids:
             existing_rows = db.execute(
-                select(Mistake.uuid, Mistake.id).where(func.lower(Mistake.uuid).in_(incoming_uuids))
+                select(Mistake.uuid, Mistake.id).where(
+                    Mistake.user_id == user_id,
+                    func.lower(Mistake.uuid).in_(incoming_uuids),
+                )
             ).all()
-            uuid_to_id = {str(row.uuid).lower(): row.id for row in existing_rows if row.uuid}
+            for row in existing_rows:
+                if not row.uuid:
+                    continue
+                key = str(row.uuid).lower()
+                uuid_to_id[key] = row.id
 
         for record in valid_mistakes:
             uuid_str = str(record.uuid).lower()
@@ -492,7 +523,9 @@ def import_data_v3(db: Session, payload: ImportPayloadV3, strategy: str) -> Impo
                 continue
 
             category_name = normalize_required_text(record.category_name, field_name="mistakes.category_name")
-            category = db.scalar(select(Category).where(Category.name == category_name))
+            category = db.scalar(
+                select(Category).where(Category.name == category_name, *_owner_filter(Category, user_id))
+            )
             if category is None:
                 raise_api_error(
                     400,
@@ -503,9 +536,10 @@ def import_data_v3(db: Session, payload: ImportPayloadV3, strategy: str) -> Impo
 
             normalized_title = normalize_required_text(record.title, field_name="mistakes.title")
             normalized_language = normalize_required_text(record.language, field_name="mistakes.language")
-            tags = get_or_create_tags(db, record.tag_names)
+            tags = get_or_create_tags(db, record.tag_names, user_id=user_id)
             mistake = Mistake(
                 uuid=uuid_str,
+                user_id=user_id,
                 title=normalized_title,
                 stem_markdown=record.stem_markdown,
                 wrong_answer_markdown=record.wrong_answer_markdown,
@@ -536,7 +570,22 @@ def import_data_v3(db: Session, payload: ImportPayloadV3, strategy: str) -> Impo
                 if source_session.id in session_id_map:
                     skipped.append(_skip("review_session", str(source_session.id), "duplicate"))
                     continue
+                existing_session = db.scalar(
+                    select(ReviewSession).where(
+                        ReviewSession.user_id == user_id,
+                        ReviewSession.started_at == source_session.started_at,
+                        ReviewSession.strategy == (source_session.strategy or "manual"),
+                        ReviewSession.ended_at == source_session.ended_at,
+                        ReviewSession.total_count == source_session.total_count,
+                        ReviewSession.completed_count == source_session.completed_count,
+                    )
+                )
+                if existing_session is not None:
+                    session_id_map[source_session.id] = existing_session.id
+                    skipped.append(_skip("review_session", str(source_session.id), "already_imported"))
+                    continue
                 session = ReviewSession(
+                    user_id=user_id,
                     started_at=source_session.started_at,
                     ended_at=source_session.ended_at,
                     strategy=source_session.strategy,
@@ -572,6 +621,26 @@ def import_data_v3(db: Session, payload: ImportPayloadV3, strategy: str) -> Impo
                     skipped.append(_skip("review_session_item", str(item.order_index), "duplicate_order"))
                     continue
 
+                existing_item = db.scalar(
+                    select(ReviewSessionItem).where(
+                        ReviewSessionItem.session_id == new_session_id,
+                        ReviewSessionItem.mistake_id == mistake_id,
+                    )
+                )
+                if existing_item is not None:
+                    skipped.append(_skip("review_session_item", str(item.mistake_uuid), "already_imported"))
+                    continue
+
+                existing_order_item = db.scalar(
+                    select(ReviewSessionItem).where(
+                        ReviewSessionItem.session_id == new_session_id,
+                        ReviewSessionItem.order_index == item.order_index,
+                    )
+                )
+                if existing_order_item is not None:
+                    skipped.append(_skip("review_session_item", str(item.order_index), "duplicate_order"))
+                    continue
+
                 seen_session_mistakes.add(session_mistake_key)
                 seen_session_orders.add(session_order_key)
                 db.add(
@@ -604,8 +673,20 @@ def import_data_v3(db: Session, payload: ImportPayloadV3, strategy: str) -> Impo
                     skipped.append(_skip("review_log", str(log.mistake_uuid), "invalid_user_result"))
                     continue
 
+                existing_log = db.scalar(
+                    select(ReviewLog).where(
+                        ReviewLog.mistake_id == mistake_id,
+                        ReviewLog.session_id == new_session_id,
+                        ReviewLog.shown_at == log.shown_at,
+                    )
+                )
+                if existing_log is not None:
+                    skipped.append(_skip("review_log", str(log.mistake_uuid), "already_imported"))
+                    continue
+
                 db.add(
                     ReviewLog(
+                        user_id=user_id,
                         mistake_id=mistake_id,
                         session_id=new_session_id,
                         review_mode=log.review_mode,
@@ -641,18 +722,19 @@ def import_data_v3(db: Session, payload: ImportPayloadV3, strategy: str) -> Impo
     )
 
 
-def export_data_v3(db: Session) -> ExportResponseV3:
+def export_data_v3(db: Session, user_id: int | None = None) -> ExportResponseV3:
     categories = [
         ImportCategory(name=c.name, description=c.description or "")
-        for c in db.scalars(select(Category).order_by(Category.id)).all()
+        for c in db.scalars(select(Category).where(*_owner_filter(Category, user_id)).order_by(Category.id)).all()
     ]
     tags = [
         ImportTag(name=t.name)
-        for t in db.scalars(select(Tag).order_by(Tag.id)).all()
+        for t in db.scalars(select(Tag).where(*_owner_filter(Tag, user_id)).order_by(Tag.id)).all()
     ]
     mistakes_orm = db.scalars(
         select(Mistake)
         .options(selectinload(Mistake.tags), selectinload(Mistake.category), selectinload(Mistake.review_logs))
+        .where(*_owner_filter(Mistake, user_id))
         .order_by(Mistake.id)
     ).all()
     mistakes_v3 = [
@@ -681,7 +763,9 @@ def export_data_v3(db: Session) -> ExportResponseV3:
         for m in mistakes_orm
     ]
     uuid_by_id = {m.id: m.uuid for m in mistakes_orm}
-    sessions_orm = db.scalars(select(ReviewSession).order_by(ReviewSession.id)).all()
+    sessions_orm = db.scalars(
+        select(ReviewSession).where(*_owner_filter(ReviewSession, user_id)).order_by(ReviewSession.id)
+    ).all()
     sessions_v3 = [
         ExportReviewSession(
             id=s.id,
@@ -694,7 +778,10 @@ def export_data_v3(db: Session) -> ExportResponseV3:
         for s in sessions_orm
     ]
     items_orm = db.scalars(
-        select(ReviewSessionItem).order_by(ReviewSessionItem.session_id, ReviewSessionItem.order_index)
+        select(ReviewSessionItem)
+        .join(ReviewSession, ReviewSessionItem.session_id == ReviewSession.id)
+        .where(*_owner_filter(ReviewSession, user_id))
+        .order_by(ReviewSessionItem.session_id, ReviewSessionItem.order_index)
     ).all()
     items_v3 = [
         ExportReviewSessionItem(
@@ -704,7 +791,7 @@ def export_data_v3(db: Session) -> ExportResponseV3:
         )
         for item in items_orm
     ]
-    logs_orm = db.scalars(select(ReviewLog).order_by(ReviewLog.shown_at)).all()
+    logs_orm = db.scalars(select(ReviewLog).where(*_owner_filter(ReviewLog, user_id)).order_by(ReviewLog.shown_at)).all()
     logs_v3 = [
         ExportReviewLog(
             mistake_uuid=uuid_by_id.get(log.mistake_id),

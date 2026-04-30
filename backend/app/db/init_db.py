@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import Optional
 
@@ -5,13 +6,16 @@ from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine
 from sqlalchemy.engine import make_url
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.db.base import Base
 from app.db.session import _connect_args
-from app.models import Category, Mistake, MistakeTag, ReviewLog, ReviewSession, ReviewSessionItem, Tag  # noqa: F401
+from app.models import Category, Mistake, MistakeTag, ReviewLog, ReviewSession, ReviewSessionItem, Tag, User  # noqa: F401
+from app.services.auth_service import ensure_default_old_user
 
 
+logger = logging.getLogger(__name__)
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 
 
@@ -32,12 +36,24 @@ def initialize_database(database_url: Optional[str] = None, force_fallback: bool
 
     if force_fallback:
         _create_all(target_url)
+        _ensure_old_user(target_url)
         return
 
     try:
         command.upgrade(_build_alembic_config(target_url), "head")
-    except Exception:
+    except Exception as exc:
+        logger.warning("Alembic migration failed, falling back to create_all: %s", exc)
         _create_all(target_url)
+    _ensure_old_user(target_url)
+
+
+def _ensure_old_user(database_url: str) -> None:
+    engine = create_engine(database_url, connect_args=_connect_args(database_url))
+    with Session(engine, autoflush=False, autocommit=False, expire_on_commit=False) as db:
+        has_users_table = engine.dialect.has_table(db.connection(), "users")
+        if has_users_table:
+            ensure_default_old_user(db)
+    engine.dispose()
 
 
 def should_initialize_database(database_url: Optional[str] = None) -> bool:

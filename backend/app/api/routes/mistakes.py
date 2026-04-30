@@ -3,7 +3,9 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_current_user
 from app.db.session import get_db
+from app.models import User
 from app.schemas.mistake import MistakeCreate, MistakeListResponse, MistakeOut, MistakeUpdate
 from app.services.mistake_service import create_mistake, delete_mistake, get_mistake, list_mistakes, update_mistake
 
@@ -12,9 +14,13 @@ router = APIRouter(prefix="/mistakes", tags=["mistakes"])
 
 
 @router.post("", response_model=MistakeOut, status_code=status.HTTP_201_CREATED)
-def create_mistake_route(payload: MistakeCreate, db: Session = Depends(get_db)) -> MistakeOut:
+def create_mistake_route(
+    payload: MistakeCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> MistakeOut:
     """Create a mistake record."""
-    return create_mistake(db, payload)
+    return create_mistake(db, payload, user_id=current_user.id)
 
 
 @router.get("", response_model=MistakeListResponse)
@@ -25,10 +31,12 @@ def list_mistakes_route(
     language: Optional[str] = Query(default=None),
     keyword: Optional[str] = Query(default=None, max_length=200),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> MistakeListResponse:
     """List mistakes with pagination and filters."""
     return list_mistakes(
         db,
+        user_id=current_user.id,
         page=page,
         page_size=page_size,
         category_id=category_id,
@@ -38,9 +46,13 @@ def list_mistakes_route(
 
 
 @router.get("/{mistake_id}", response_model=MistakeOut)
-def get_mistake_route(mistake_id: int, db: Session = Depends(get_db)) -> MistakeOut:
+def get_mistake_route(
+    mistake_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> MistakeOut:
     """Fetch a mistake by id."""
-    return get_mistake(db, mistake_id)
+    return get_mistake(db, mistake_id, user_id=current_user.id)
 
 
 @router.patch("/{mistake_id}", response_model=MistakeOut)
@@ -48,13 +60,18 @@ def update_mistake_route(
     mistake_id: int,
     payload: MistakeUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> MistakeOut:
     """Partially update a mistake."""
-    return update_mistake(db, mistake_id, payload)
+    return update_mistake(db, mistake_id, payload, user_id=current_user.id)
 
 
 @router.delete("/{mistake_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_mistake_route(mistake_id: int, db: Session = Depends(get_db)) -> Response:
+def delete_mistake_route(
+    mistake_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
     """Delete a mistake by id."""
-    delete_mistake(db, mistake_id)
+    delete_mistake(db, mistake_id, user_id=current_user.id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

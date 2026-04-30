@@ -10,6 +10,7 @@ interface DraftStoreState {
   replaceDraft: (key: string, draft: MistakeDraft) => void;
   patchDraft: (key: string, draft: Partial<MistakeDraft>) => void;
   clearDraft: (key: string) => void;
+  clearAll: () => void;
 }
 
 const createDraftStore = () =>
@@ -53,6 +54,7 @@ const createDraftStore = () =>
         delete nextDrafts[key];
         return { drafts: nextDrafts };
       }),
+    clearAll: () => set({ drafts: {} }),
   }));
 
 export const draftStore = createDraftStore();

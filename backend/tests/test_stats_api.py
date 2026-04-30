@@ -88,10 +88,10 @@ class StatsAPITests(APIServerTestCase):
         self._execute(
             """
             INSERT INTO review_logs (
-              mistake_id, session_id, review_mode, user_result, shown_at, answered_at, note
-            ) VALUES (?, NULL, 'manual', ?, ?, ?, ?)
+              user_id, mistake_id, session_id, review_mode, user_result, shown_at, answered_at, note
+            ) VALUES ((SELECT user_id FROM mistakes WHERE id = ?), ?, NULL, 'manual', ?, ?, ?, ?)
             """,
-            (mistake_id, user_result.upper(), stored, stored, note),
+            (mistake_id, mistake_id, user_result.upper(), stored, stored, note),
         )
 
     def _update_mistake(

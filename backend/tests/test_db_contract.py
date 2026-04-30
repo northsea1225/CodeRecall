@@ -19,6 +19,7 @@ class DatabaseContractTests(unittest.TestCase):
             ReviewLog,
             ReviewSession,
             Tag,
+            User,
         )
 
         expected_tables = {
@@ -29,6 +30,7 @@ class DatabaseContractTests(unittest.TestCase):
             "review_session_items",
             "review_sessions",
             "tags",
+            "users",
         }
 
         self.assertTrue(expected_tables.issubset(set(Base.metadata.tables)))

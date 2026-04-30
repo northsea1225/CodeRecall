@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { FullscreenExitOutlined, FullscreenOutlined } from "@ant-design/icons";
 import { Alert, Button, Card, Empty, Progress, Result, Segmented, Space, Spin, Tag, Typography } from "antd";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -10,15 +11,23 @@ import RawMistakeDrawer from "../../components/review/RawMistakeDrawer";
 import ReviewPageState from "../../components/review/ReviewPageState";
 import StemView from "../../components/review/StemView";
 import { selfRateOptions } from "../../components/review/shared";
+import { getStatsOverview } from "../../services/statsService";
+import { useAuthStore } from "../../stores/authStore";
 import { useReviewStore } from "../../stores/reviewStore";
+import { uiStore } from "../../stores/uiStore";
 import type { ReviewStrategy } from "../../types/review";
 
-export default function ReviewPage() {
+interface ReviewPageProps {
+  immersive?: boolean;
+}
+
+export default function ReviewPage({ immersive = false }: ReviewPageProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
   const [rawMistakeOpen, setRawMistakeOpen] = useState(false);
   const [selectedStrategy, setSelectedStrategy] = useState<ReviewStrategy>("due_first");
+  const prevCompleted = useRef(false);
   const sessionId = useReviewStore((state) => state.sessionId);
   const strategy = useReviewStore((state) => state.strategy);
   const progress = useReviewStore((state) => state.progress);
@@ -83,8 +92,37 @@ export default function ReviewPage() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [currentItem, loading, sessionId, showAnswer, showingAnswer, submitRate, submitting]);
 
+  useEffect(() => {
+    if (!prevCompleted.current && completed) {
+      const tz = -new Date().getTimezoneOffset();
+      void getStatsOverview({ tz_offset_minutes: tz })
+        .then(({ streak_days }) => {
+          const userId = useAuthStore.getState().userId ?? "guest";
+          const localDate = new Date().toLocaleDateString("sv");
+          const dedupKey = `cr-streak-toast:${userId}:${localDate}`;
+          if (localStorage.getItem(dedupKey)) return;
+          localStorage.setItem(dedupKey, "1");
+          const showToast = uiStore.getState().showToast;
+          if (streak_days >= 30) {
+            showToast("success", t("review.streakMilestone30"));
+          } else if (streak_days >= 7) {
+            showToast("success", t("review.streakMilestone7"));
+          } else {
+            showToast("info", t("review.streakToast", { days: streak_days }));
+          }
+        })
+        .catch((err) => console.error("Streak check failed", err));
+    }
+    prevCompleted.current = completed;
+  }, [completed]);
+
   const percent = progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0;
-  const handleExit = () => { setExitConfirmOpen(false); setRawMistakeOpen(false); exitSession(); navigate("/dashboard"); };
+  const handleExit = () => {
+    setExitConfirmOpen(false);
+    setRawMistakeOpen(false);
+    exitSession();
+    navigate(immersive ? "/review" : "/dashboard");
+  };
   const handleShowAnswer = () => void showAnswer();
 
   if (!sessionId && !loading) {
@@ -104,6 +142,17 @@ export default function ReviewPage() {
               value={selectedStrategy}
               onChange={(value) => setSelectedStrategy(value as ReviewStrategy)}
             />
+            {!immersive ? (
+              <span className="review-immersive-entry">
+                <Button icon={<FullscreenOutlined />} onClick={() => navigate("/review/immersive")}>
+                  {t("review.enterImmersive")}
+                </Button>
+              </span>
+            ) : (
+              <Button className="review-immersive-exit" icon={<FullscreenExitOutlined />} onClick={() => navigate("/review")}>
+                {t("review.exitImmersive")}
+              </Button>
+            )}
             <Button onClick={() => navigate("/mistakes")}>{t("review.backToList")}</Button>
             <Button type="primary" onClick={() => void startSession({ strategy: selectedStrategy })}>
               {t("review.startReview")}

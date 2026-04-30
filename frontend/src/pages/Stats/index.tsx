@@ -119,7 +119,7 @@ export default function StatsPage() {
               options={rangeOptions}
               onChange={(value: number) => setRangeDays(value)}
             />
-            <Tag color="blue">tz_offset {tzOffsetMinutes}m</Tag>
+            {import.meta.env.DEV && <Tag color="blue">tz_offset {tzOffsetMinutes}m</Tag>}
             <Button onClick={() => setReloadToken((value) => value + 1)}>{t("stats.refresh")}</Button>
           </Space>
         </div>

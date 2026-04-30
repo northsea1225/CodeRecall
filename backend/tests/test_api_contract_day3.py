@@ -33,6 +33,7 @@ class APIServerTestCase(unittest.TestCase):
         self.port = find_free_port()
         self.database_url = f"sqlite:///{Path(self.tempdir.name) / 'test.db'}"
         self.server = self._start_server()
+        self.auth_token = self._login_old_user()
 
     def tearDown(self) -> None:
         if hasattr(self, "server") and self.server.poll() is None:
@@ -100,6 +101,8 @@ class APIServerTestCase(unittest.TestCase):
     ) -> Tuple[int, Optional[Union[Dict, List]], Dict[str, str]]:
         url = f"http://127.0.0.1:{self.port}{path}"
         headers = {"Accept": "application/json"}
+        if hasattr(self, "auth_token"):
+            headers["Authorization"] = f"Bearer {self.auth_token}"
         body = None
 
         if payload is not None:
@@ -120,6 +123,22 @@ class APIServerTestCase(unittest.TestCase):
 
         parsed_body = json.loads(raw_body) if raw_body else None
         return status_code, parsed_body, response_headers
+
+    def _login_old_user(self) -> str:
+        url = f"http://127.0.0.1:{self.port}/api/v1/auth/token"
+        body = parse.urlencode({"username": "old_user", "password": "coderecall"}).encode("utf-8")
+        req = request.Request(
+            url,
+            data=body,
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            method="POST",
+        )
+        with request.urlopen(req, timeout=5) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        return payload["access_token"]
 
 
 class Day3APIContractTests(APIServerTestCase):

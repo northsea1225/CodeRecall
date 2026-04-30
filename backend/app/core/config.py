@@ -1,3 +1,4 @@
+import logging
 from functools import lru_cache
 from pathlib import Path
 from typing import Optional
@@ -5,6 +6,21 @@ from typing import Optional
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
+
+logger = logging.getLogger(__name__)
+
+_DEFAULT_JWT_SECRET = "change-me-in-production"
+_INSECURE_JWT_SECRETS = {
+    _DEFAULT_JWT_SECRET,
+    "dev-only-replace-this-with-a-generated-random-secret",
+    "",
+}
+_INSECURE_OLD_USER_PASSWORDS = {
+    "coderecall",
+    "change_me_immediately",
+    "dev-only-replace-this-with-a-strong-password",
+    "",
+}
 
 
 class Settings(BaseSettings):
@@ -23,6 +39,10 @@ class Settings(BaseSettings):
     llm_base_url: str = Field(default="", alias="LLM_BASE_URL")
     llm_allowed_models: str = Field(default="", alias="LLM_ALLOWED_MODELS")
     llm_quick_model: str = Field(default="", alias="LLM_QUICK_MODEL")
+    jwt_secret_key: str = Field(default=_DEFAULT_JWT_SECRET, alias="JWT_SECRET_KEY")
+    jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
+    access_token_expire_minutes: int = Field(default=10080, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
+    old_user_initial_password: str = Field(default="", alias="OLD_USER_INITIAL_PASSWORD")
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -56,7 +76,32 @@ class Settings(BaseSettings):
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    return Settings()
+    s = Settings()
+    env = s.app_env.strip().lower()
+
+    if env == "test":
+        if s.jwt_secret_key.strip() in _INSECURE_JWT_SECRETS:
+            logger.warning("JWT_SECRET_KEY is using the default test value.")
+        if s.old_user_initial_password.strip() in _INSECURE_OLD_USER_PASSWORDS:
+            logger.warning("OLD_USER_INITIAL_PASSWORD is using an insecure default.")
+        return s
+
+    if s.jwt_secret_key.strip() in _INSECURE_JWT_SECRETS:
+        raise RuntimeError(
+            "JWT_SECRET_KEY must be set to a non-default value. "
+            "Only APP_ENV=test is exempt. "
+            "Run: python -c \"import secrets; print(secrets.token_urlsafe(48))\""
+        )
+
+    if s.old_user_initial_password.strip() in _INSECURE_OLD_USER_PASSWORDS:
+        raise RuntimeError(
+            "OLD_USER_INITIAL_PASSWORD must be set to a non-empty, non-default value.\n"
+            "Quick fix:\n"
+            "  export OLD_USER_INITIAL_PASSWORD=$(python -c \"import secrets; print(secrets.token_urlsafe(24))\")\n"
+            "Only APP_ENV=test is exempt."
+        )
+
+    return s
 
 
 settings = get_settings()

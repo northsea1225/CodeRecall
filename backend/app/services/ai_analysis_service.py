@@ -133,10 +133,10 @@ class AiAnalysisProvider:
 
         api_key = self.settings.llm_api_key.strip()
         resolved_model = resolve_model(model, self.settings)
+        if not resolved_model:
+            raise AiAnalysisError("ai_model_not_configured", "No AI model configured.", 500)
         if not api_key:
             raise AiAnalysisError("ai_auth_failed", "AI API key is missing.", 401)
-        if not resolved_model:
-            raise AiAnalysisError("ai_service_unavailable", "AI model is not configured.", 503)
 
         base_url = self.settings.llm_base_url.rstrip("/")
         url = f"{base_url}/chat/completions"
@@ -205,8 +205,9 @@ class AiAnalysisProvider:
             raise AiAnalysisError("ai_dependency_missing", "AI analysis dependency is missing.", 500) from exc
 
         api_key = self.settings.llm_api_key.strip()
-        quick_model = self.settings.llm_quick_model.strip() or self.settings.llm_model.strip()
-        resolved_model = model or quick_model
+        resolved_model = resolve_model(model, self.settings)
+        if not resolved_model:
+            raise AiAnalysisError("ai_model_not_configured", "No AI model configured.", 500)
         if not api_key:
             raise AiAnalysisError("ai_auth_failed", "AI API key is missing.", 401)
 

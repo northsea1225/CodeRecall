@@ -28,8 +28,11 @@ def _derive_status(answered_logs: list[ReviewLog]) -> MistakeStatus:
     return MistakeStatus.REVIEWING
 
 
-def apply_progress(db: Session, session: ReviewSession, log: ReviewLog) -> ReviewProgressOut:
-    mistake = db.get(Mistake, log.mistake_id)
+def apply_progress(db: Session, session: ReviewSession, log: ReviewLog, user_id: int | None = None) -> ReviewProgressOut:
+    statement = select(Mistake).where(Mistake.id == log.mistake_id)
+    if user_id is not None:
+        statement = statement.where(Mistake.user_id == user_id)
+    mistake = db.scalar(statement)
     if mistake is None:
         raise ValueError(f"mistake {log.mistake_id} missing while applying review progress")
 
@@ -38,6 +41,7 @@ def apply_progress(db: Session, session: ReviewSession, log: ReviewLog) -> Revie
             select(ReviewLog)
             .where(
                 ReviewLog.mistake_id == log.mistake_id,
+                *( [ReviewLog.user_id == user_id] if user_id is not None else [] ),
                 ReviewLog.answered_at.is_not(None),
             )
             .order_by(ReviewLog.answered_at.asc(), ReviewLog.id.asc())
@@ -67,7 +71,10 @@ def apply_progress(db: Session, session: ReviewSession, log: ReviewLog) -> Revie
         log.old_ease_factor = previous_ease_factor
         log.new_ease_factor = mistake.ease_factor
 
-    completed = int(db.scalar(select(func.count()).select_from(ReviewLog).where(ReviewLog.session_id == session.id)) or 0)
+    completed_filters = [ReviewLog.session_id == session.id]
+    if user_id is not None:
+        completed_filters.append(ReviewLog.user_id == user_id)
+    completed = int(db.scalar(select(func.count()).select_from(ReviewLog).where(*completed_filters)) or 0)
     session.completed_count = completed
     if completed >= session.total_count and session.ended_at is None:
         session.ended_at = log.answered_at or utc_now()

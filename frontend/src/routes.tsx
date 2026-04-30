@@ -3,12 +3,16 @@ import { Button, Layout, Menu, Spin } from "antd";
 import { useTranslation } from "react-i18next";
 import { createBrowserRouter, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 
+import { useAuthStore } from "./stores/authStore";
 import { useUIStore } from "./stores/uiStore";
 
 const DashboardPage = lazy(() => import("./pages/Dashboard"));
 const ImportExportPage = lazy(() => import("./pages/ImportExport"));
+const LoginPage = lazy(() => import("./pages/Login"));
 const MistakeEditorPage = lazy(() => import("./pages/MistakeEditor"));
 const MistakeListPage = lazy(() => import("./pages/MistakeList"));
+const RegisterPage = lazy(() => import("./pages/Register"));
+const ImmersiveReviewPage = lazy(() => import("./pages/Review/ImmersiveReviewPage"));
 const ReviewPage = lazy(() => import("./pages/Review"));
 const StatsPage = lazy(() => import("./pages/Stats"));
 
@@ -42,6 +46,8 @@ function AppLayout() {
   const language = useUIStore((state) => state.language);
   const toggleTheme = useUIStore((state) => state.toggleTheme);
   const toggleLanguage = useUIStore((state) => state.toggleLanguage);
+  const username = useAuthStore((state) => state.username);
+  const logout = useAuthStore((state) => state.logout);
   const navigationItems = useMemo(
     () => [
       { key: "/dashboard", label: t("nav.dashboard") },
@@ -70,6 +76,19 @@ function AppLayout() {
           items={navigationItems}
           onClick={({ key }) => navigate(key)}
         />
+        <div className="sider-user-footer">
+          <div className="sider-username">{username}</div>
+          <Button
+            type="text"
+            size="small"
+            onClick={() => {
+              logout();
+              navigate("/login");
+            }}
+          >
+            {t("auth.logout")}
+          </Button>
+        </div>
       </Sider>
       <Layout>
         <Header className="app-header">
@@ -104,20 +123,33 @@ function AppLayout() {
   );
 }
 
+function AuthGuard() {
+  const token = useAuthStore((state) => state.token);
+  return token ? <Outlet /> : <Navigate to="/login" replace />;
+}
+
 export const router = createBrowserRouter([
+  { path: "/login", element: withSuspense(<LoginPage />) },
+  { path: "/register", element: withSuspense(<RegisterPage />) },
   {
     path: "/",
-    element: <AppLayout />,
+    element: <AuthGuard />,
     children: [
-      { index: true, element: <Navigate to="/dashboard" replace /> },
-      { path: "dashboard", element: withSuspense(<DashboardPage />) },
-      { path: "mistakes", element: withSuspense(<MistakeListPage />) },
-      { path: "mistakes/new", element: withSuspense(<MistakeEditorPage />) },
-      { path: "mistakes/:id", element: withSuspense(<MistakeEditorPage />) },
-      { path: "mistakes/:id/edit", element: withSuspense(<MistakeEditorPage />) },
-      { path: "review", element: withSuspense(<ReviewPage />) },
-      { path: "stats", element: withSuspense(<StatsPage />) },
-      { path: "import-export", element: withSuspense(<ImportExportPage />) },
+      { path: "review/immersive", element: withSuspense(<ImmersiveReviewPage />) },
+      {
+        element: <AppLayout />,
+        children: [
+          { index: true, element: <Navigate to="/dashboard" replace /> },
+          { path: "dashboard", element: withSuspense(<DashboardPage />) },
+          { path: "mistakes", element: withSuspense(<MistakeListPage />) },
+          { path: "mistakes/new", element: withSuspense(<MistakeEditorPage />) },
+          { path: "mistakes/:id", element: withSuspense(<MistakeEditorPage />) },
+          { path: "mistakes/:id/edit", element: withSuspense(<MistakeEditorPage />) },
+          { path: "review", element: withSuspense(<ReviewPage />) },
+          { path: "stats", element: withSuspense(<StatsPage />) },
+          { path: "import-export", element: withSuspense(<ImportExportPage />) },
+        ],
+      },
     ],
   },
 ]);

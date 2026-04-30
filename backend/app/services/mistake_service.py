@@ -35,6 +35,7 @@ def _normalize_title(title: str) -> str:
 def list_mistakes(
     db: Session,
     *,
+    user_id: Optional[int] = None,
     page: int,
     page_size: int,
     category_id: Optional[int] = None,
@@ -45,6 +46,7 @@ def list_mistakes(
     normalized_keyword = normalize_optional_text(keyword)
     items = MistakeRepository.list(
         db,
+        user_id=user_id,
         page=page,
         page_size=page_size,
         category_id=category_id,
@@ -53,6 +55,7 @@ def list_mistakes(
     )
     total = MistakeRepository.count(
         db,
+        user_id=user_id,
         category_id=category_id,
         language=normalized_language,
         keyword=normalized_keyword,
@@ -64,22 +67,23 @@ def list_mistakes(
     )
 
 
-def get_mistake(db: Session, mistake_id: int) -> MistakeOut:
-    mistake = MistakeRepository.get_by_id(db, mistake_id)
+def get_mistake(db: Session, mistake_id: int, user_id: Optional[int] = None) -> MistakeOut:
+    mistake = MistakeRepository.get_by_id(db, mistake_id, user_id=user_id)
     if mistake is None:
         raise_not_found("mistake", mistake_id)
     return _serialize_mistake(mistake)
 
 
-def create_mistake(db: Session, payload: MistakeCreate) -> MistakeOut:
+def create_mistake(db: Session, payload: MistakeCreate, user_id: Optional[int] = None) -> MistakeOut:
     from app.models import Mistake
 
-    category = get_category(db, payload.category_id)
-    tags = get_or_create_tags(db, payload.tags)
+    category = get_category(db, payload.category_id, user_id=user_id)
+    tags = get_or_create_tags(db, payload.tags, user_id=user_id)
     timestamp = utc_now()
 
     mistake = Mistake(
         title=_normalize_title(payload.title),
+        user_id=user_id,
         stem_markdown=payload.stem_markdown,
         wrong_answer_markdown=payload.wrong_answer_markdown,
         correct_answer_markdown=payload.correct_answer_markdown,
@@ -98,14 +102,14 @@ def create_mistake(db: Session, payload: MistakeCreate) -> MistakeOut:
     db.commit()
     db.refresh(mistake)
 
-    hydrated = MistakeRepository.get_by_id(db, mistake.id)
+    hydrated = MistakeRepository.get_by_id(db, mistake.id, user_id=user_id)
     if hydrated is None:
         raise_api_error(500, "mistake_create_failed", "Mistake creation failed.")
     return _serialize_mistake(hydrated)
 
 
-def update_mistake(db: Session, mistake_id: int, payload: MistakeUpdate) -> MistakeOut:
-    mistake = MistakeRepository.get_by_id(db, mistake_id)
+def update_mistake(db: Session, mistake_id: int, payload: MistakeUpdate, user_id: Optional[int] = None) -> MistakeOut:
+    mistake = MistakeRepository.get_by_id(db, mistake_id, user_id=user_id)
     if mistake is None:
         raise_not_found("mistake", mistake_id)
 
@@ -136,9 +140,9 @@ def update_mistake(db: Session, mistake_id: int, payload: MistakeUpdate) -> Mist
                 "category_id cannot be null.",
                 {"field": "category_id"},
             )
-        mistake.category_id = get_category(db, category_id).id
+        mistake.category_id = get_category(db, category_id, user_id=user_id).id
     if "tags" in updates:
-        mistake.tags = get_or_create_tags(db, updates["tags"] or [])
+        mistake.tags = get_or_create_tags(db, updates["tags"] or [], user_id=user_id)
     if "is_archived" in updates:
         mistake.is_archived = updates["is_archived"]
 
@@ -146,14 +150,14 @@ def update_mistake(db: Session, mistake_id: int, payload: MistakeUpdate) -> Mist
     db.commit()
     db.refresh(mistake)
 
-    hydrated = MistakeRepository.get_by_id(db, mistake.id)
+    hydrated = MistakeRepository.get_by_id(db, mistake.id, user_id=user_id)
     if hydrated is None:
         raise_not_found("mistake", mistake.id)
     return _serialize_mistake(hydrated)
 
 
-def delete_mistake(db: Session, mistake_id: int) -> None:
-    mistake = MistakeRepository.get_by_id(db, mistake_id)
+def delete_mistake(db: Session, mistake_id: int, user_id: Optional[int] = None) -> None:
+    mistake = MistakeRepository.get_by_id(db, mistake_id, user_id=user_id)
     if mistake is None:
         raise_not_found("mistake", mistake_id)
 

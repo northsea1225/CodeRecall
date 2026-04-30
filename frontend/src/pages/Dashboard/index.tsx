@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { FireFilled } from "@ant-design/icons";
 import { Button, Card, List, Result, Skeleton, Space, Statistic, Tag, Typography } from "antd";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { listMistakes } from "../../services/mistakeService";
 import { getDueCount } from "../../services/reviewService";
+import { getStatsOverview } from "../../services/statsService";
 import { useReviewStore } from "../../stores/reviewStore";
 import { listCategories, listTags } from "../../services/taxonomyService";
 import { useUIStore } from "../../stores/uiStore";
@@ -22,6 +24,8 @@ export default function DashboardPage() {
   const [tags, setTags] = useState<TaxonomyTag[]>([]);
   const [totalMistakes, setTotalMistakes] = useState(0);
   const [dueCount, setDueCount] = useState(0);
+  const [streakDays, setStreakDays] = useState(0);
+  const [mistakesApiOk, setMistakesApiOk] = useState(true);
 
   const formatDate = (value: string): string =>
     new Date(value).toLocaleString(language, {
@@ -39,10 +43,11 @@ export default function DashboardPage() {
       setError(null);
 
       try {
-        const [mistakeResponse, categoryResponse, tagResponse, dueCountResponse] = await Promise.all([
+        const [mistakeResult, categoryResult, tagResult, overviewResult, dueCountResult] = await Promise.allSettled([
           listMistakes({ page: 1, page_size: 5 }),
           listCategories(),
           listTags(),
+          getStatsOverview({ tz_offset_minutes: -new Date().getTimezoneOffset() }),
           getDueCount(),
         ]);
 
@@ -50,11 +55,19 @@ export default function DashboardPage() {
           return;
         }
 
-        setRecentMistakes(mistakeResponse.items);
-        setTotalMistakes(mistakeResponse.total);
-        setCategories(categoryResponse.items);
-        setTags(tagResponse.items);
-        setDueCount(dueCountResponse.due_count);
+        const mistakeResponse = mistakeResult.status === "fulfilled" ? mistakeResult.value : null;
+        const categoryResponse = categoryResult.status === "fulfilled" ? categoryResult.value : null;
+        const tagResponse = tagResult.status === "fulfilled" ? tagResult.value : null;
+        const overviewResponse = overviewResult.status === "fulfilled" ? overviewResult.value : null;
+        const dueCountResponse = dueCountResult.status === "fulfilled" ? dueCountResult.value : null;
+
+        setMistakesApiOk(mistakeResult.status === "fulfilled");
+        setRecentMistakes(mistakeResponse?.items ?? []);
+        setTotalMistakes(mistakeResponse?.total ?? 0);
+        setCategories(categoryResponse?.items ?? []);
+        setTags(tagResponse?.items ?? []);
+        setStreakDays(overviewResponse?.streak_days ?? 0);
+        setDueCount(dueCountResponse?.due_count ?? 0);
       } catch (bootstrapError) {
         if (!active) {
           return;
@@ -84,8 +97,8 @@ export default function DashboardPage() {
           </Typography.Title>
           <p className="page-subtitle">{t("dashboard.subtitleLoading")}</p>
         </div>
-        <div className="metric-grid">
-          {Array.from({ length: 3 }).map((_, index) => (
+        <div className="dashboard-metric-grid">
+          {Array.from({ length: 4 }).map((_, index) => (
             <Card key={index} className="panel-card">
               <Skeleton active paragraph={false} />
             </Card>
@@ -140,7 +153,7 @@ export default function DashboardPage() {
         </Space>
       </div>
 
-      <div className="metric-grid">
+      <div className="dashboard-metric-grid">
         <Card className="panel-card">
           <Statistic title={t("dashboard.totalMistakes")} value={totalMistakes} />
         </Card>
@@ -150,9 +163,36 @@ export default function DashboardPage() {
         <Card className="panel-card">
           <Statistic title={t("dashboard.tags")} value={tags.length} />
         </Card>
+        <Card className="panel-card">
+          <Statistic
+            title={t("dashboard.streakDays")}
+            value={streakDays}
+            suffix={t("dashboard.streakUnit")}
+            prefix={
+              <FireFilled
+                style={{
+                  color:
+                    streakDays >= 30
+                      ? "var(--color-warning)"
+                      : streakDays >= 7
+                        ? "var(--color-success)"
+                        : undefined,
+                }}
+              />
+            }
+            valueStyle={{
+              color:
+                streakDays >= 30
+                  ? "var(--color-warning)"
+                  : streakDays >= 7
+                    ? "var(--color-success)"
+                    : undefined,
+            }}
+          />
+        </Card>
       </div>
 
-      {totalMistakes === 0 ? (
+      {totalMistakes === 0 && mistakesApiOk ? (
         <Card className="panel-card">
           <div className="placeholder-copy">
             <Typography.Title level={4}>{t("dashboard.emptyTitle")}</Typography.Title>

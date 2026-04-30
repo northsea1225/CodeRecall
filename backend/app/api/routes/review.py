@@ -3,7 +3,9 @@ from typing import Optional
 from fastapi import APIRouter, Body, Depends, status
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_current_user
 from app.db.session import get_db
+from app.models import User
 from app.schemas.review import (
     ReviewCapabilityOut,
     ReviewDueCountOut,
@@ -33,14 +35,19 @@ router = APIRouter(prefix="/review", tags=["review"])
 def start_review_session_route(
     payload: Optional[ReviewSessionStartIn] = Body(default=None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ReviewSessionOut:
     request = payload or ReviewSessionStartIn()
-    return start_session(db, strategy=request.strategy, limit=request.limit)
+    return start_session(db, strategy=request.strategy, limit=request.limit, user_id=current_user.id)
 
 
 @router.get("/sessions/{session_id}/next", response_model=ReviewNextOut)
-def get_next_review_item_route(session_id: int, db: Session = Depends(get_db)) -> ReviewNextOut:
-    return get_next_item(db, session_id)
+def get_next_review_item_route(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ReviewNextOut:
+    return get_next_item(db, session_id, user_id=current_user.id)
 
 
 @router.post("/sessions/{session_id}/submit", response_model=ReviewSubmitOut)
@@ -48,6 +55,7 @@ def submit_review_result_route(
     session_id: int,
     payload: ReviewSubmitIn,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ReviewSubmitOut:
     return submit_result(
         db,
@@ -57,12 +65,17 @@ def submit_review_result_route(
         payload.shown_at,
         payload.time_spent_ms,
         payload.note,
+        user_id=current_user.id,
     )
 
 
 @router.get("/sessions/{session_id}/summary", response_model=ReviewSummaryOut)
-def get_review_summary_route(session_id: int, db: Session = Depends(get_db)) -> ReviewSummaryOut:
-    return get_summary(db, session_id)
+def get_review_summary_route(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ReviewSummaryOut:
+    return get_summary(db, session_id, user_id=current_user.id)
 
 
 @router.get("/capability", response_model=ReviewCapabilityOut, response_model_exclude_none=True)
@@ -71,10 +84,17 @@ def get_review_capability_route() -> ReviewCapabilityOut:
 
 
 @router.get("/due-count", response_model=ReviewDueCountOut)
-def get_review_due_count_route(db: Session = Depends(get_db)) -> ReviewDueCountOut:
-    return get_due_count(db)
+def get_review_due_count_route(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ReviewDueCountOut:
+    return get_due_count(db, user_id=current_user.id)
 
 
 @router.get("/items/{mistake_id}/reveal", response_model=ReviewRevealOut)
-def get_review_reveal_route(mistake_id: int, db: Session = Depends(get_db)) -> ReviewRevealOut:
-    return get_reveal(db, mistake_id)
+def get_review_reveal_route(
+    mistake_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ReviewRevealOut:
+    return get_reveal(db, mistake_id, user_id=current_user.id)

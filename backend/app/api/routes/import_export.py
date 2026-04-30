@@ -6,8 +6,10 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_current_user
 from app.api.errors import raise_api_error
 from app.db.session import get_db
+from app.models import User
 from app.schemas.import_export import ExportResponse, ExportResponseV3, ImportPayload, ImportPayloadV3, ImportResponse
 from app.services.import_export_service import (
     export_data,
@@ -30,9 +32,10 @@ V1_IMPORT_RESPONSE_EXCLUDE = {
 def export_route(
     include: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """Export selected resources as JSON."""
-    export_payload = export_data(db, parse_export_include(include))
+    export_payload = export_data(db, parse_export_include(include), user_id=current_user.id)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     return JSONResponse(
         content=jsonable_encoder(export_payload),
@@ -44,8 +47,11 @@ def export_route(
 
 
 @router.get("/export/v3", response_model=ExportResponseV3)
-def export_v3_route(db: Session = Depends(get_db)) -> JSONResponse:
-    export_payload = export_data_v3(db)
+def export_v3_route(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    export_payload = export_data_v3(db, user_id=current_user.id)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     return JSONResponse(
         content=jsonable_encoder(export_payload),
@@ -61,9 +67,10 @@ def import_route(
     payload: ImportPayload,
     strategy: str = Query(default="skip_existing"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ImportResponse:
     """Import categories, tags, and mistakes from JSON."""
-    return import_data(db, payload, strategy)
+    return import_data(db, payload, strategy, user_id=current_user.id)
 
 
 @router.post("/import/v3", response_model=ImportResponse)
@@ -71,15 +78,19 @@ def import_v3_route(
     payload: ImportPayloadV3,
     strategy: str = Query(default="skip_existing"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ImportResponse:
     """Import a schema v3 full backup, including review history."""
-    return import_data_v3(db, payload, strategy)
+    return import_data_v3(db, payload, strategy, user_id=current_user.id)
 
 
 @router.get("/mistakes/export")
-def export_mistakes_route(db: Session = Depends(get_db)) -> JSONResponse:
+def export_mistakes_route(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
     """Export mistakes as a v2 round-trip list."""
-    return JSONResponse(content=jsonable_encoder(export_mistakes_v2(db)))
+    return JSONResponse(content=jsonable_encoder(export_mistakes_v2(db, user_id=current_user.id)))
 
 
 @router.post("/mistakes/import", response_model=ImportResponse, response_model_exclude=V1_IMPORT_RESPONSE_EXCLUDE)
@@ -87,6 +98,7 @@ def import_mistakes_route(
     payload: Any = Body(...),
     strategy: str = Query(default="skip_existing"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ImportResponse:
     """Import mistakes from the v2 round-trip list shape."""
     if isinstance(payload, list):
@@ -97,10 +109,10 @@ def import_mistakes_route(
                 "Import payload must be a list of mistake objects.",
                 {},
             )
-        return import_mistakes_v2_records(db, payload, strategy)
+        return import_mistakes_v2_records(db, payload, strategy, user_id=current_user.id)
 
     if isinstance(payload, dict):
-        return import_data(db, ImportPayload.model_validate(payload), strategy)
+        return import_data(db, ImportPayload.model_validate(payload), strategy, user_id=current_user.id)
 
     raise_api_error(
         422,
