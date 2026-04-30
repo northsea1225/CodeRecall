@@ -60,11 +60,11 @@ def parse_export_include(include: Optional[str]) -> set[str]:
     return requested
 
 
-def _owner_filter(model, user_id: int | None):
-    return [model.user_id == user_id] if user_id is not None else []
+def _owner_filter(model, user_id: int):
+    return [model.user_id == user_id]
 
 
-def export_data(db: Session, include: Iterable[str], user_id: int | None = None) -> ExportResponse:
+def export_data(db: Session, include: Iterable[str], *, user_id: int) -> ExportResponse:
     selected = set(include)
     categories = []
     tags = []
@@ -130,7 +130,7 @@ def export_data(db: Session, include: Iterable[str], user_id: int | None = None)
     )
 
 
-def export_mistakes_v2(db: Session, user_id: int | None = None) -> list[dict[str, Any]]:
+def export_mistakes_v2(db: Session, *, user_id: int) -> list[dict[str, Any]]:
     """Export the mistakes-only v2 shape used by the batch round-trip flow."""
     return [
         {
@@ -192,7 +192,7 @@ def _field_length_skip_reason(record) -> str | None:
     return None
 
 
-def import_data(db: Session, payload: ImportPayload, strategy: str, user_id: int | None = None) -> ImportResponse:
+def import_data(db: Session, payload: ImportPayload, strategy: str, *, user_id: int) -> ImportResponse:
     if payload.version != "v1":
         raise_api_error(
             400,
@@ -355,7 +355,8 @@ def import_mistakes_v2_records(
     db: Session,
     records: list[dict[str, Any]],
     strategy: str,
-    user_id: int | None = None,
+    *,
+    user_id: int,
 ) -> ImportResponse:
     mistakes = [
         ImportMistake(
@@ -393,7 +394,7 @@ def get_or_create_names(values: Iterable[str]) -> set[str]:
     }
 
 
-def import_data_v3(db: Session, payload: ImportPayloadV3, strategy: str, user_id: int | None = None) -> ImportResponse:
+def import_data_v3(db: Session, payload: ImportPayloadV3, strategy: str, *, user_id: int) -> ImportResponse:
     if payload.format != "coderecall" or payload.schema_version != 3:
         raise_api_error(
             400,
@@ -722,7 +723,7 @@ def import_data_v3(db: Session, payload: ImportPayloadV3, strategy: str, user_id
     )
 
 
-def export_data_v3(db: Session, user_id: int | None = None) -> ExportResponseV3:
+def export_data_v3(db: Session, *, user_id: int) -> ExportResponseV3:
     categories = [
         ImportCategory(name=c.name, description=c.description or "")
         for c in db.scalars(select(Category).where(*_owner_filter(Category, user_id)).order_by(Category.id)).all()

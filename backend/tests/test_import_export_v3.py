@@ -142,13 +142,13 @@ class ExportDataV3Tests(unittest.TestCase):
     def _export_seeded_payload(self):
         self._seed_review_graph()
         with self.SessionLocal() as db:
-            return export_data_v3(db)
+            return export_data_v3(db, user_id=self._old_user_id(db))
 
     def test_export_data_v3_contains_uuid_review_links_and_expected_shape(self) -> None:
         first_id, second_id = self._seed_review_graph()
 
         with self.SessionLocal() as db:
-            payload = export_data_v3(db)
+            payload = export_data_v3(db, user_id=self._old_user_id(db))
 
         self.assertEqual(payload.format, "coderecall")
         self.assertEqual(payload.schema_version, 3)
