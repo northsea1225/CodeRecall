@@ -82,6 +82,24 @@ Serve `frontend/dist` as static files. Configure your reverse proxy to:
 - Proxy `/api/v1/*` and `/auth/*` to backend port 8000
 - **Disable proxy buffering for SSE** (`proxy_buffering off` in nginx; long connection timeout ≥ 120s)
 
+## Database Migration on Startup
+
+Since the C-002+H-001 fix, the backend lifespan hook **always** invokes `alembic upgrade head` on startup. The behavior on migration failure depends on whether the database is empty or already initialized:
+
+| State | Migration result | Outcome |
+| --- | --- | --- |
+| Empty DB (SQLite file missing, or no `alembic_version` table) | success | Schema upgraded to head; `old_user` ensured |
+| Empty DB | failure | Falls back to `Base.metadata.create_all` + warning log; app still starts |
+| Existing DB (SQLite file exists, or `alembic_version` table present) | success | Schema upgraded to head |
+| Existing DB | failure | **Application fails to start** (RuntimeError). No silent `create_all` — that would corrupt schema by skipping migration semantics |
+
+Operational consequences:
+
+- A manual `alembic upgrade head` step is **no longer required** before launching the backend; the application handles it on boot. The pre-launch step is kept in this runbook for operators who prefer to validate migrations explicitly.
+- Before any production deploy that ships new migrations: **back up the database** (`cp coderecall.db coderecall.db.$(date +%Y%m%d-%H%M%S).bak` for SQLite; `pg_dump` for Postgres) and run a full upgrade in staging first.
+- If `uvicorn --workers > 1`, prefer `--workers 1` or gunicorn so only one worker performs the upgrade. SQLite has no advisory lock; concurrent migration is unsupported.
+- Migration failure logs land at `ERROR` level for existing DBs (containing the exception chain) and `WARNING` level for empty DBs (containing the fallback notice).
+
 ## Environment Variables
 
 Backend variables live in `backend/.env`; use `backend/.env.example` as the template.
@@ -117,10 +135,10 @@ Frontend:
 ## Verification Commands
 
 ```bash
-# Backend tests (expected: 160 passed)
+# Backend tests (expected: 184 passed)
 cd backend && .venv/bin/python -m pytest --tb=short -q
 
-# Frontend tests (expected: 32 passed)
+# Frontend tests (expected: 40 passed)
 cd frontend && npm run test -- --run
 
 # TypeScript check

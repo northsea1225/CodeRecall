@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from logging.config import fileConfig
 
 from alembic import context
@@ -12,7 +13,16 @@ from app.models import Category, Mistake, MistakeTag, ReviewLog, ReviewSession, 
 config = context.config
 
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    # alembic.ini ships a [logger_root] section; logging.config.fileConfig
+    # rebuilds the root logger handlers from scratch, which detaches handlers
+    # the host process attached earlier (uvicorn, pytest caplog, etc.). We
+    # snapshot and restore them so in-process callers keep their logging.
+    _root = logging.getLogger()
+    _preserved = list(_root.handlers)
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
+    for _handler in _preserved:
+        if _handler not in _root.handlers:
+            _root.addHandler(_handler)
 
 config.set_main_option("sqlalchemy.url", settings.database_url)
 target_metadata = Base.metadata

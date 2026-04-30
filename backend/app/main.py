@@ -12,13 +12,15 @@ from app.api.errors import error_payload
 from app.api.routes import api_router
 from app.core.config import settings
 from app.core.limiter import limiter
-from app.db.init_db import initialize_database, should_initialize_database
+from app.db.init_db import initialize_database
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    if should_initialize_database():
-        initialize_database()
+    # Always run migrations on startup. initialize_database() decides internally
+    # whether to fall back to create_all (empty DB) or fail-fast (existing DB)
+    # when Alembic upgrade fails — see backend/app/db/init_db.py.
+    initialize_database()
     yield
 
 

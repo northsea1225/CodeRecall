@@ -47,21 +47,41 @@ API 文档：`http://localhost:8000/docs`
 
 ## 当前焦点
 
-**全栈大规模审阅完成 → 进入 audit-fixes 实施阶段**（2026-04-30）。
+**Audit-fixes Phase 2 完成（6/6） → 准备进入 Phase 3**（2026-05-01 更新）。
 
 - 审阅产出：`docs/audit/2026-04-29/`（三方独立报告 Claude/Codex/Gemini + 综合 final-report.md）
 - 修复计划：`.claude/plan/audit-fixes.md`（41 个 issue × 4 个 Phase × 81h 工时，含 Codex 交叉验证合并决议）
 - **本次审阅识别出 5 个 Critical / 9 个 High / 13 个 Medium / 7 个 Low + 7 个改进**
 - **执行模式（重要）**：用户已授权本次 audit-fixes 由 Claude 亲自执行（直接 Edit/Write，不派 Codex/team agent），但仍需每次实施前呈报具体改动 + 等待确认（详见"协作规范 - 临时例外"）
 
-当前状态：backend 165 passed · frontend 32 passed · Alembic head: 0008
+当前状态：backend **184 passed** · frontend **40 passed** · type-check 退出 0 · Alembic head: 0008
+
+### Phase 1 已交付（5 个一行修复）
+
+走 `dc4d6df`（test 补强）+ `979effb` 包含的内联修复，详见 plan §C-004/M-007/M-009/M-011/M-013。
+
+### Phase 2 完成（6/6）
+
+| Issue | 状态 | Commit | 备注 |
+|-------|------|--------|------|
+| H-005（pin deps with hashes via pip-tools） | ✅ | `539b3c7` | requirements.in/.txt + .gitignore |
+| C-003 + I-005（IP 限流：auth/AI/import） | ✅ | `46482ef` | slowapi 0.1.9 + RATE_LIMIT_ENABLED env + autouse fixture |
+| H-003（SSRF：跨主机 redirect 拒绝） | ✅ | `fbc8339` | providers/base.py 加 safe_request helper + ALLOWED_REDIRECT_HOSTS |
+| H-004（/import payload 上限） | ✅ | `394c871` | BodySizeLimitMiddleware 50MB + Pydantic max_length |
+| L-001 + M-002 + M-003（router bridge + type-check） | ✅ | `1eed8c5` | utils/routerBridge.ts + npm run type-check |
+| C-002 + H-001（lifespan 重写） | ✅ | 本 commit | initialize_database 已有库 fail-fast；env.py 保护 root handlers；4 cases test_lifespan_migration |
+
+### Phase 3 起步说明
+
+进入 Phase 3 前先重新和用户确认范围（plan §H-008 / H-009 / C-001 / H-007 / H-002+I-001 / H-006）。Phase 2 期间的「临时例外」按 CLAUDE.md 协作规范条款仍适用于 plan 范围内任务，但 Phase 3 涉及 user_id 必填 5 批等大改，建议先呈报最新方案再决定是否继续亲自执行。
 
 > Month 1（用户认证 Phase A+B + schema_v3 + CF 导入）已于 2026-04-24 全部交付。
 > Month 2（Streak 打卡 + 暗房复习模式 + SSE 认证修复）已于 2026-04-25 交付。
 > P0 安全修复（old_user 密码后门 + JWT fail-fast）已于 2026-04-26 完成。
 > P1 稳定性修复（M2/M3/M4/M5/M-new）已于 2026-04-26 完成。
 > **全栈大规模审阅（三方独立 + 综合）**已于 2026-04-29 完成。
-> **Audit-fixes 计划（41 issue / 81h）**已于 2026-04-30 产出，进入 Phase 1 实施阶段。
+> **Audit-fixes 计划（41 issue / 81h）**已于 2026-04-30 产出。
+> **Phase 2 完成 6/6（H-005 / C-003+I-005 / H-003 / H-004 / L-001+M-002+M-003 / C-002+H-001）**于 2026-05-01。
 
 ---
 

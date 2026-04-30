@@ -31,6 +31,25 @@ def _create_all(database_url: str) -> None:
     Base.metadata.create_all(bind=engine)
 
 
+def _database_has_state(database_url: str) -> bool:
+    url = make_url(database_url)
+    backend = url.get_backend_name()
+    if backend == "sqlite":
+        database = url.database or ""
+        if database in {":memory:", ""}:
+            return False
+        db_path = Path(database)
+        if not db_path.is_absolute():
+            db_path = Path.cwd() / db_path
+        return db_path.exists()
+    engine = create_engine(database_url, connect_args=_connect_args(database_url))
+    try:
+        with engine.connect() as conn:
+            return engine.dialect.has_table(conn, "alembic_version")
+    finally:
+        engine.dispose()
+
+
 def initialize_database(database_url: Optional[str] = None, force_fallback: bool = False) -> None:
     target_url = database_url or settings.database_url
 
@@ -39,11 +58,22 @@ def initialize_database(database_url: Optional[str] = None, force_fallback: bool
         _ensure_old_user(target_url)
         return
 
+    db_exists = _database_has_state(target_url)
     try:
         command.upgrade(_build_alembic_config(target_url), "head")
     except Exception as exc:
-        logger.warning("Alembic migration failed, falling back to create_all: %s", exc)
-        _create_all(target_url)
+        if not db_exists:
+            logger.warning(
+                "Alembic upgrade failed for empty DB, falling back to create_all: %s",
+                exc,
+            )
+            _create_all(target_url)
+        else:
+            logger.error(
+                "Alembic upgrade failed on existing DB; refusing to fall back to create_all: %s",
+                exc,
+            )
+            raise
     _ensure_old_user(target_url)
 
 
@@ -57,6 +87,9 @@ def _ensure_old_user(database_url: str) -> None:
 
 
 def should_initialize_database(database_url: Optional[str] = None) -> bool:
+    # Deprecated: kept for backwards compatibility. The lifespan now always runs
+    # initialize_database(), which internally decides between fallback create_all
+    # (empty DB) and fail-fast (existing DB) when Alembic upgrade fails.
     target_url = database_url or settings.database_url
     url = make_url(target_url)
     if url.get_backend_name() != "sqlite":
