@@ -1,3 +1,6 @@
+> ⚠️ 本文件为 W3 增量契约，仅供历史参考。
+> 完整当前 API 参考见 [docs/api-contract-current.md](api-contract-current.md)。
+
 # CodeRecall API Contract W3
 
 > W3 新增 Stats 契约，覆盖 `/api/v1/stats/*` 四个只读接口。

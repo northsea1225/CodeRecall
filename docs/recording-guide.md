@@ -232,7 +232,7 @@ macOS 上实际录制分辨率跟随屏幕物理像素，若是 Retina 屏幕，
 
 **操作**:
 - 打开手机秒表
-- 按照 demo-script-v2.md 的时间轴，卡表演练
+- 按照 docs/demo-video-script-final.md 的时间轴，卡表演练
 - 在每个场景切换点报一下当前时间
 
 **常见问题处理**:

@@ -1,50 +1,57 @@
-# CodeRecall (码迹) 🚀
+# CodeRecall / 码错本
 
-![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg)
+![Python 3.9.6](https://img.shields.io/badge/Python-3.9.6-blue.svg)
 ![Node 18+](https://img.shields.io/badge/Node-18%2B-green.svg)
-![pytest](https://img.shields.io/badge/pytest-passing-success.svg)
-![vitest](https://img.shields.io/badge/vitest-passing-success.svg)
+![pytest](https://img.shields.io/badge/pytest-160%20passed-success.svg)
+![vitest](https://img.shields.io/badge/vitest-32%20passed-success.svg)
 
-**CodeRecall** is an intelligent, spaced-repetition-based programming mistake notebook designed to help developers learn from their errors efficiently.
+**CodeRecall / 码错本** is an intelligent, spaced-repetition programming mistake notebook for OI/ACM/LeetCode competitors. Core differentiators: 6-stage dynamic AI coaching (adapts to your review history, not generic replies) + SM-2 forgetting-curve scheduling + one-click LeetCode/Codeforces import.
 
-<!-- CodeRecall 是一款基于间隔重复算法的智能编程错题本，旨在帮助开发者高效地从错误中学习。 -->
+Core loop: **Import problem → Record mistake → SM-2 scheduled review → 6-stage dynamic AI deep analysis**
 
 ## ✨ Features
 
-* 🧠 **Spaced Repetition (SM-2):** Optimized review scheduling to ensure long-term retention of programming concepts. (基于 SM-2 算法的间隔重复复习)
-* 🤖 **AI-Powered Analysis:** Streaming SSE integration with LLMs (Claude/Gemini) for deep root-cause analysis of mistakes. (AI 驱动的错题根因深度分析)
-* 📊 **Comprehensive Dashboard:** Visual insights including trend charts, heatmaps, and weak area identification. (包含趋势图、热力图和薄弱环节的全面数据看板)
-* 📝 **Rich Code Editing:** Monaco editor integration with syntax highlighting and code fence support. (集成 Monaco 编辑器，支持语法高亮)
-* 🔄 **Import/Export v2:** Seamlessly backup and restore your mistake library. (便捷的错题库导入/导出)
-* 🏷️ **Categorization & Filtering:** Organize mistakes by language, framework, or custom tags. (灵活的分类和标签过滤)
+- **Spaced Repetition (SM-2):** Optimized review scheduling for long-term retention.
+- **6-Stage AI Coaching:** Dynamic prompts adapt to your review stage (`new_mistake` / `early_review` / `repeated_weakness` / `lapsed` / `oscillator` / `maintenance`).
+- **JWT User Auth & Data Isolation:** Secure per-user data with Bearer token authentication.
+- **Streak Dashboard:** Continuous review streak, heatmap, trend charts, algorithm radar.
+- **Immersive Dark Room Review:** Full-screen distraction-free review mode (`/review/immersive`).
+- **CF / LeetCode URL Import:** One-click problem statement import from Codeforces and LeetCode (CN/EN).
+- **schema_v3 Import/Export:** Full backup including review history, UUID cross-device dedup, backward-compatible with v1/v2.
+- **Rich Code Editing:** Monaco editor with syntax highlighting; Markdown + LaTeX (KaTeX) rendering.
+- **Categorization & Tags:** Organize mistakes by language, algorithm category, and custom tags.
 
-## 🏗️ Architecture Overview
+## 🏗️ Architecture
 
 ```text
-+-------------------+       REST API & SSE       +-------------------+
-|   Frontend (UI)   | <------------------------> | Backend (API)     |
-|                   |                            |                   |
-| - React 18        |                            | - FastAPI         |
-| - TypeScript      |                            | - SQLAlchemy      |
-| - Vite            |                            | - SQLite          |
-| - Monaco Editor   |                            | - AI Integration  |
-| - Tailwind CSS    |                            | - SM-2 Engine     |
-+-------------------+                            +-------------------+
++-------------------+     REST API & SSE      +-------------------+
+|   Frontend (SPA)  | <---------------------> |   Backend (API)   |
+|                   |                         |                   |
+| React 18          |                         | FastAPI           |
+| TypeScript        |                         | SQLAlchemy        |
+| Vite              |                         | SQLite            |
+| Ant Design 5      |                         | Alembic           |
+| react-router-dom  |                         | JWT Auth          |
+| Zustand 5         |                         | SSE AI            |
++-------------------+                         | SM-2 Engine       |
+                                              +-------------------+
 ```
 
 ## 🚀 Quick Start
 
-### Backend Setup (后端运行)
+### Backend
 
 ```bash
 cd backend
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+cp .env.example .env             # edit .env: set JWT_SECRET_KEY and OLD_USER_INITIAL_PASSWORD
+alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
-### Frontend Setup (前端运行)
+### Frontend
 
 ```bash
 cd frontend
@@ -52,65 +59,96 @@ npm install
 npm run dev
 ```
 
+Open `http://localhost:5173`. API docs: `http://localhost:8000/docs`.
+
 ## ⚙️ Environment Variables
 
-Create a `.env` file in the `backend` directory:
+Create `backend/.env` from `backend/.env.example`.
+
+### Core
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DATABASE_URL` | SQLite connection string | `sqlite:///./coderecall.db` |
-| `AI_API_KEY` | Your LLM API Key (Claude/Gemini) | `""` |
-| `AI_PROVIDER` | LLM Provider (e.g., `anthropic`, `google`) | `anthropic` |
-| `CORS_ORIGINS` | Allowed frontend origins | `http://localhost:5173` |
+| `APP_ENV` | Runtime label: `development`, `test`, `production` | `development` |
+| `DATABASE_URL` | SQLAlchemy connection string | `sqlite:///./coderecall.db` |
+| `FRONTEND_ORIGIN` | Allowed CORS origin | `http://localhost:5173` |
 
-## 🔌 API Endpoints Overview
+### Auth (required in production)
 
-Key routes available at `http://localhost:8000/docs`:
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `JWT_SECRET_KEY` | HS256 signing secret — **must change in production** | `change-me-in-production` |
+| `JWT_ALGORITHM` | JWT algorithm | `HS256` |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Token lifetime (minutes) | `10080` (7 days) |
+| `OLD_USER_INITIAL_PASSWORD` | Initial password for legacy-data owner account | `coderecall` |
 
-* `GET /api/mistakes/` - List mistakes with pagination and filtering
-* `POST /api/mistakes/` - Create a new mistake entry
-* `GET /api/mistakes/{id}` - Get mistake details
-* `PUT /api/mistakes/{id}` - Update a mistake
-* `POST /api/reviews/` - Submit a review (triggers SM-2 update)
-* `GET /api/reviews/due` - Get mistakes due for review today
-* `GET /api/stats/dashboard` - Get dashboard statistics (heatmaps, trends)
-* `GET /api/ai/analyze/{id}` - Stream AI analysis via SSE
+### AI (optional)
 
-## 🛠️ Development Commands
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `ENABLE_AI_ANALYSIS` | Enable AI endpoints | `false` |
+| `LLM_PROVIDER` | Provider identifier | `deepseek` |
+| `LLM_MODEL` | Default analysis model | `deepseek-v4-pro` |
+| `LLM_MODEL_PREMIUM` | Premium analysis model | `deepseek-v4-pro` |
+| `LLM_QUICK_MODEL` | Fast model (variant generation) | `deepseek-v4-flash` |
+| `LLM_API_KEY` | Provider API key — never commit | `` |
+| `LLM_BASE_URL` | Provider base URL | `https://api.deepseek.com/v1` |
+| `LLM_ALLOWED_MODELS` | Comma-separated allowlist | `deepseek-v4-pro,deepseek-v4-flash` |
+
+## 🔌 API Endpoints
+
+All versioned routes are at `/api/v1`. Auth routes at `/auth/*`. Full reference: [`docs/api-contract-current.md`](docs/api-contract-current.md).
+
+| Route | Description |
+|-------|-------------|
+| `POST /auth/token` | Login (form-encoded) |
+| `POST /auth/register` | Register new user |
+| `GET /auth/me` | Current user info |
+| `GET /api/v1/mistakes` | List mistakes (paginated, filterable) |
+| `POST /api/v1/mistakes` | Create mistake |
+| `GET /api/v1/review/next` | Next due mistake for review |
+| `POST /api/v1/review/submit` | Submit review rating |
+| `GET /api/v1/stats/overview` | Dashboard KPIs |
+| `GET /api/v1/ai/analyze/stream` | SSE AI analysis stream |
+| `POST /api/v1/ai/generate-variant/{id}` | AI variant problem |
+| `GET /api/v1/export/v3` | Full backup (schema_v3) |
+| `POST /api/v1/import/v3` | Restore from schema_v3 |
+| `POST /api/v1/import/problem-url/preview` | CF / LeetCode URL import |
+
+## 🛠️ Development
 
 ### Backend
 
 ```bash
-# Run tests
-pytest
+# Run all tests (from backend/)
+.venv/bin/python -m pytest -q          # expected: 160 passed
 
-# Format code
+# Format / lint
 black app tests
-
-# Lint code
 flake8 app tests
 ```
 
 ### Frontend
 
 ```bash
-# Run tests
-npm run test
-
-# Type check
+npm test -- --run          # expected: 32 passed (8 files)
 npm run type-check
-
-# Build for production
 npm run build
 ```
 
-## 🤝 Contributing
+## 🔒 Security Notice
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-<!-- 欢迎提交 PR 参与贡献！ -->
+**Before any real deployment:**
+
+1. Set `JWT_SECRET_KEY` to a random secret (`openssl rand -hex 32`).
+2. Set `OLD_USER_INITIAL_PASSWORD` to a strong password and immediately change it after first login.
+3. Set `APP_ENV=production` — the backend will refuse to start if the default JWT secret is used outside `development`/`test`.
+
+See [`SECURITY.md`](SECURITY.md) for the full production security checklist.
+
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+3. Commit your changes
+4. Open a Pull Request
