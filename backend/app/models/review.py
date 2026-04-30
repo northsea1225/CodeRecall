@@ -25,7 +25,7 @@ class ReviewSession(Base):
     __tablename__ = "review_sessions"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", name="fk_review_sessions_user_id_users"), index=True, nullable=False)
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -75,7 +75,7 @@ class ReviewLog(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", name="fk_review_logs_user_id_users"), index=True, nullable=False)
     mistake_id: Mapped[int] = mapped_column(ForeignKey("mistakes.id", ondelete="CASCADE"), index=True)
     session_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("review_sessions.id", ondelete="SET NULL"),

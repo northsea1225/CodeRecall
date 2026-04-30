@@ -20,7 +20,7 @@ class Category(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", name="fk_categories_user_id_users"), index=True, nullable=False)
     name: Mapped[str] = mapped_column(String(100), index=True)
     description: Mapped[str] = mapped_column(Text, default="", server_default="")
     parent_id: Mapped[Optional[int]] = mapped_column(

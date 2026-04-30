@@ -47,7 +47,7 @@ class Mistake(Base):
         default=lambda: str(uuid4()),
     )
     title: Mapped[str] = mapped_column(String(255), index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", name="fk_mistakes_user_id_users"), index=True, nullable=False)
     stem_markdown: Mapped[str] = mapped_column(Text)
     wrong_answer_markdown: Mapped[str] = mapped_column(Text)
     correct_answer_markdown: Mapped[str] = mapped_column(Text)
