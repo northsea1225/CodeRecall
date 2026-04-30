@@ -89,18 +89,7 @@ def _count_completed(db: Session, session_id: int, *, user_id: int) -> int:
 
 def _progress_for_session(db: Session, session: ReviewSession, *, user_id: int) -> ReviewProgressOut:
     completed = _count_completed(db, session.id, user_id=user_id)
-    if session.completed_count != completed:
-        session.completed_count = completed
-        db.commit()
-        db.refresh(session)
     return ReviewProgressOut(completed=completed, total=session.total_count)
-
-
-def _mark_session_completed_if_needed(db: Session, session: ReviewSession, *, progress: ReviewProgressOut) -> None:
-    if progress.completed >= session.total_count and session.ended_at is None:
-        session.ended_at = utc_now()
-        db.commit()
-        db.refresh(session)
 
 
 def start_session(db: Session, strategy: str, limit: int, *, user_id: int) -> ReviewSessionOut:
@@ -155,7 +144,6 @@ def get_next_item(db: Session, session_id: int, *, user_id: int) -> ReviewNextOu
 
     next_session_item = select_next_mistake(db, session)
     if next_session_item is None:
-        _mark_session_completed_if_needed(db, session, progress=progress)
         return ReviewNextOut(next_item=None, progress=progress)
 
     return ReviewNextOut(
@@ -204,7 +192,6 @@ def get_reveal(db: Session, mistake_id: int, *, user_id: int) -> ReviewRevealOut
 def get_summary(db: Session, session_id: int, *, user_id: int) -> ReviewSummaryOut:
     session = _get_session(db, session_id, user_id=user_id)
     progress = _progress_for_session(db, session, user_id=user_id)
-    _mark_session_completed_if_needed(db, session, progress=progress)
 
     counts = {result.value: 0 for result in ReviewResult}
     rows = db.execute(
