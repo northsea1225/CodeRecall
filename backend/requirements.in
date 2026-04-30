@@ -1,0 +1,22 @@
+fastapi~=0.115
+uvicorn[standard]~=0.32
+sqlalchemy~=2.0
+alembic~=1.13
+pydantic~=2.9
+pydantic-settings~=2.6
+# python-multipart locked at 0.0.20 (highest Python 3.9-compatible; 0.0.21+ requires Python 3.10+).
+# Known CVEs accepted (see SECURITY.md): GHSA-wp53-j4wj-2cfg (HIGH, not triggered — no UPLOAD_DIR config),
+#                                        GHSA-mj87-hwqh-73pj (MODERATE, multipart DoS; mitigated by C-003 rate limiting).
+python-multipart>=0.0.18,<0.1
+pytest~=8.3  # GHSA-6w46-j5rx-g56g (Moderate, test-only) — accepted risk
+httpx~=0.27
+eval_type_backport==0.3.1
+beautifulsoup4~=4.12
+lxml~=6.1  # security: GHSA-vfmq-68hx-4jfw (XXE in XML mode; project uses HTML mode but upgrade per plan acceptance)
+markdownify~=0.14
+passlib[bcrypt]~=1.7
+PyJWT~=2.12
+bcrypt==4.0.1
+# python-dotenv 1.2.2 fix requires Python 3.10+; locked at 1.2.1 here (transitive via pydantic-settings).
+# Known CVE accepted (see SECURITY.md): GHSA-mf9w-mj56-hr94 (MODERATE, not triggered — no set_key/unset_key calls).
+python-dotenv>=1.2.1,<1.2.2

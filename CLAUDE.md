@@ -14,7 +14,7 @@
 - GitHub：`https://github.com/northsea1225/CodeRecall`
 - 后端：FastAPI + SQLAlchemy + SQLite，Python 3.9.6（本地 venv at `backend/.venv`）
 - 前端：React 18 + TypeScript + Vite + Ant Design 5 + react-router-dom 7.1.x + Zustand 5
-- 测试：后端 **160 passed**（pytest），前端 **32 passed**（vitest，8 files）
+- 测试：后端 **165 passed**（pytest），前端 **32 passed**（vitest，8 files）
 - 已安装依赖：`passlib[bcrypt]` 1.7.4、`PyJWT` 2.12.1、`bcrypt==4.0.1`（pinned for passlib 兼容）
 - AI 模型：`deepseek-v4-pro`（主/高级）、`deepseek-v4-flash`（快速），配置在 `backend/.env`
 
@@ -54,7 +54,7 @@ API 文档：`http://localhost:8000/docs`
 - **本次审阅识别出 5 个 Critical / 9 个 High / 13 个 Medium / 7 个 Low + 7 个改进**
 - **执行模式（重要）**：用户已授权本次 audit-fixes 由 Claude 亲自执行（直接 Edit/Write，不派 Codex/team agent），但仍需每次实施前呈报具体改动 + 等待确认（详见"协作规范 - 临时例外"）
 
-当前状态：backend 160 passed · frontend 32 passed · Alembic head: 0008
+当前状态：backend 165 passed · frontend 32 passed · Alembic head: 0008
 
 > Month 1（用户认证 Phase A+B + schema_v3 + CF 导入）已于 2026-04-24 全部交付。
 > Month 2（Streak 打卡 + 暗房复习模式 + SSE 认证修复）已于 2026-04-25 交付。

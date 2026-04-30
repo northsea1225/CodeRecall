@@ -110,6 +110,19 @@ These issues were identified in a three-model code review (Codex + Gemini + Clau
 | M4 | P1 | `import_export_service.py` | v3 session dedup uses only 4 fields; same-second sessions with same strategy may merge | Add `ended_at` and `completed_count` to dedup key, or use stable session UUID in payload |
 | M-new | P1 | `Dashboard/index.tsx` | `Promise.all` over 5 stat endpoints — any single failure crashes the entire Dashboard | Replace with `Promise.allSettled`; degrade each metric independently |
 
+## Accepted CVEs (Python 3.9 constraint)
+
+The dependency pinning policy (`backend/requirements.in` → `backend/requirements.txt` via `pip-compile`) blocks any package whose fix release requires Python ≥ 3.10. The following advisories are tracked and analyzed but cannot be auto-remediated by upgrading until the project moves off Python 3.9. CI passes `--ignore-vuln` for these IDs to `pip-audit`.
+
+| CVE / GHSA | Package | Severity | Fix Version | Why Accepted |
+|------------|---------|----------|-------------|--------------|
+| GHSA-wp53-j4wj-2cfg | python-multipart 0.0.20 | HIGH | 0.0.22 (Python 3.10+) | Path-traversal only when `UPLOAD_DIR` + `UPLOAD_KEEP_FILENAME=True` are configured. Project does not configure these — only `OAuth2PasswordRequestForm` (form-encoded) is used. Verified by grep. |
+| GHSA-mj87-hwqh-73pj | python-multipart 0.0.20 | MODERATE | 0.0.26 (Python 3.10+) | DoS via large multipart preamble/epilogue. Compensating controls tracked in audit-fixes plan: H-004 (50MB body limit) + C-003 (rate limiting on auth endpoints). |
+| GHSA-mf9w-mj56-hr94 | python-dotenv 1.2.1 | MODERATE | 1.2.2 (Python 3.10+) | Symlink TOCTOU in `set_key` / `unset_key`. Project only reads `.env` via `pydantic-settings`; never calls `set_key` or `unset_key`. Verified by grep. |
+| GHSA-6w46-j5rx-g56g | pytest 8.4.2 | MODERATE | 9.0.3 | `/tmp/pytest-of-{user}` collision on UNIX. Test-time dependency only; no production exposure. |
+
+**Future work**: Upgrading the project Python from 3.9 to 3.11 will unblock these upgrades. This is tracked as a candidate Phase 4 issue in `.claude/plan/audit-fixes.md`.
+
 ## Reporting Security Issues
 
 Please report security vulnerabilities by opening an issue on the project repository and marking it with the `security` label. Do not include exploit details in public issues.

@@ -2,7 +2,7 @@
 
 ![Python 3.9.6](https://img.shields.io/badge/Python-3.9.6-blue.svg)
 ![Node 18+](https://img.shields.io/badge/Node-18%2B-green.svg)
-![pytest](https://img.shields.io/badge/pytest-160%20passed-success.svg)
+![pytest](https://img.shields.io/badge/pytest-165%20passed-success.svg)
 ![vitest](https://img.shields.io/badge/vitest-32%20passed-success.svg)
 
 **CodeRecall / 码错本** is an intelligent, spaced-repetition programming mistake notebook for OI/ACM/LeetCode competitors. Core differentiators: 6-stage dynamic AI coaching (adapts to your review history, not generic replies) + SM-2 forgetting-curve scheduling + one-click LeetCode/Codeforces import.
@@ -45,7 +45,7 @@ Core loop: **Import problem → Record mistake → SM-2 scheduled review → 6-s
 cd backend
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+pip install --require-hashes -r requirements.txt
 cp .env.example .env             # edit .env: set JWT_SECRET_KEY and OLD_USER_INITIAL_PASSWORD
 alembic upgrade head
 uvicorn app.main:app --reload
@@ -60,6 +60,28 @@ npm run dev
 ```
 
 Open `http://localhost:5173`. API docs: `http://localhost:8000/docs`.
+
+## 📦 Updating Backend Dependencies
+
+Backend dependencies are pinned with hashes via [`pip-tools`](https://pip-tools.readthedocs.io/). The flow:
+
+1. Edit `backend/requirements.in` (human-maintained version constraints).
+2. Recompile to regenerate `backend/requirements.txt`:
+   ```bash
+   cd backend
+   pip install pip-tools
+   pip-compile --generate-hashes --resolver=backtracking requirements.in -o requirements.txt
+   ```
+3. Verify in a clean venv:
+   ```bash
+   pip install --require-hashes -r requirements.txt
+   pytest tests/ -q                                                    # 165 passed
+   pip-audit --strict --requirement requirements.txt \
+     --ignore-vuln GHSA-wp53-j4wj-2cfg --ignore-vuln GHSA-mj87-hwqh-73pj \
+     --ignore-vuln GHSA-mf9w-mj56-hr94 --ignore-vuln GHSA-6w46-j5rx-g56g
+   ```
+
+`requirements.txt` is generated — **do not edit it by hand**. Accepted CVEs (Python 3.9 constraint) are documented in [`SECURITY.md`](SECURITY.md#accepted-cves-python-39-constraint).
 
 ## ⚙️ Environment Variables
 
@@ -121,7 +143,7 @@ All versioned routes are at `/api/v1`. Auth routes at `/auth/*`. Full reference:
 
 ```bash
 # Run all tests (from backend/)
-.venv/bin/python -m pytest -q          # expected: 160 passed
+.venv/bin/python -m pytest -q          # expected: 165 passed
 
 # Format / lint
 black app tests
