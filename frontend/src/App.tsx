@@ -4,6 +4,7 @@ import enUS from "antd/locale/en_US";
 import zhCN from "antd/locale/zh_CN";
 import { RouterProvider } from "react-router-dom";
 
+import PWAUpdatePrompt from "./components/PWAUpdatePrompt";
 import { router } from "./routes";
 import { useUIStore } from "./stores/uiStore";
 
@@ -66,6 +67,7 @@ export default function App() {
     >
       <AntdApp>
         <ToastBridge />
+        <PWAUpdatePrompt />
         <RouterProvider router={router} />
       </AntdApp>
     </ConfigProvider>

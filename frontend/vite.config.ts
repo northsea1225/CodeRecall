@@ -11,7 +11,10 @@ export default defineConfig({
     // in Phase 2/3 — keep this config minimal so a regression rolls back cheap.
     VitePWA({
       registerType: "autoUpdate",
-      injectRegister: "auto",
+      // Phase 2: hand registration to <PWAUpdatePrompt /> via useRegisterSW so
+      // we can surface the "new version" notification to the user instead of
+      // silently swapping the SW on the next tab open.
+      injectRegister: false,
       includeAssets: [
         "logo.png",
         "icon-192.png",
@@ -53,7 +56,7 @@ export default defineConfig({
       workbox: {
         // Precache only small static shell assets. Monaco language workers
         // (>3 MB each) are excluded so first paint stays fast and SW quota
-        // does not balloon. API runtime caching is configured in Phase 2.
+        // does not balloon. API runtime caching is configured in Phase 3.
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         globIgnores: [
           "**/ts.worker-*.js",
@@ -63,6 +66,17 @@ export default defineConfig({
           "**/html.worker-*.js",
         ],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+        // SPA deep-link fallback: serve cached index.html for navigations
+        // (e.g. F5 on /mistakes/abc) so React Router can pick up the route.
+        // The denylist keeps backend / OpenAPI / health routes out of the SW
+        // navigation handler.
+        navigateFallback: "index.html",
+        navigateFallbackDenylist: [
+          /^\/api\//,
+          /^\/health$/,
+          /^\/docs/,
+          /^\/openapi/,
+        ],
       },
     }),
   ],

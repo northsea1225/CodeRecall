@@ -273,5 +273,11 @@ const enUS = {
     demoLoaded: 'Demo data loaded',
     demoLoadFailed: 'Failed to load demo data',
   },
+  pwa: {
+    updateTitle: 'New version available',
+    updateDescription: 'Refresh to use the latest version',
+    updateNow: 'Refresh now',
+    updateLater: 'Later',
+  },
 } as const;
 export default enUS;

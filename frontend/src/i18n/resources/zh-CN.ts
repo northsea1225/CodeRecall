@@ -273,5 +273,11 @@ const zhCN = {
     demoLoaded: 'Demo 数据已载入',
     demoLoadFailed: 'Demo 数据载入失败',
   },
+  pwa: {
+    updateTitle: '新版本已就绪',
+    updateDescription: '刷新页面以使用最新功能',
+    updateNow: '立即刷新',
+    updateLater: '稍后',
+  },
 } as const;
 export default zhCN;
