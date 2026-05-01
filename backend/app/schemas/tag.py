@@ -3,9 +3,11 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.taxonomy_constraints import TagName
+
 
 class TagBase(BaseModel):
-    name: str
+    name: TagName
 
 
 class TagCreate(TagBase):
@@ -13,7 +15,7 @@ class TagCreate(TagBase):
 
 
 class TagUpdate(BaseModel):
-    name: Optional[str] = None
+    name: Optional[TagName] = None
 
 
 class TagOut(TagBase):

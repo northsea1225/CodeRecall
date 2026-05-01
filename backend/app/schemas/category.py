@@ -3,10 +3,12 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.taxonomy_constraints import CategoryDescription, CategoryName
+
 
 class CategoryBase(BaseModel):
-    name: str
-    description: str = ""
+    name: CategoryName
+    description: CategoryDescription = ""
     parent_id: Optional[int] = None
     sort_order: int = 0
 
@@ -16,8 +18,8 @@ class CategoryCreate(CategoryBase):
 
 
 class CategoryUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
+    name: Optional[CategoryName] = None
+    description: Optional[CategoryDescription] = None
     parent_id: Optional[int] = None
     sort_order: Optional[int] = None
 

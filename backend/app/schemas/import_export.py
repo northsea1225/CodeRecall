@@ -3,14 +3,16 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from app.schemas.taxonomy_constraints import CategoryDescription, CategoryName, TagName
+
 
 class ImportCategory(BaseModel):
-    name: str
-    description: str = ""
+    name: CategoryName
+    description: CategoryDescription = ""
 
 
 class ImportTag(BaseModel):
-    name: str
+    name: TagName
 
 
 class ImportMistake(BaseModel):
@@ -23,8 +25,8 @@ class ImportMistake(BaseModel):
     difficulty: int = Field(ge=1, le=5)
     source: str = ""
     status: str = "new"
-    category_name: str
-    tag_names: list[str] = Field(default_factory=list)
+    category_name: CategoryName
+    tag_names: list[TagName] = Field(default_factory=list)
     ease_factor: float = 2.5
     interval_days: int = 0
     repetition: int = 0
@@ -112,8 +114,8 @@ class ExportMistakeV3(BaseModel):
     difficulty: int = Field(ge=1, le=5)
     source: str
     status: str
-    category_name: str
-    tag_names: list[str]
+    category_name: CategoryName
+    tag_names: list[TagName]
     ease_factor: float
     interval_days: int
     repetition: int
