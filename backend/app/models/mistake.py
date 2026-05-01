@@ -38,6 +38,8 @@ class Mistake(Base):
             unique=True,
             sqlite_where=sa.text("uuid IS NOT NULL"),
         ),
+        Index("ix_mistakes_user_next_review", "user_id", "next_review_at"),
+        Index("ix_mistakes_user_archived", "user_id", "is_archived"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)

@@ -72,6 +72,7 @@ class ReviewLog(Base):
     __tablename__ = "review_logs"
     __table_args__ = (
         Index("ix_review_logs_mistake_id_shown_at", "mistake_id", "shown_at"),
+        Index("ix_review_logs_user_shown", "user_id", "shown_at"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
