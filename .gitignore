@@ -28,3 +28,6 @@ dist/
 .omx/
 .claude/
 .playwright-cli/
+playwright-report/
+test-results/
+frontend/playwright/.cache/

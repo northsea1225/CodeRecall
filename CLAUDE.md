@@ -323,13 +323,20 @@ C-005 Token 安全改造 / I-006 Playwright e2e / I-004 PWA / I-007 CI 扫描 / 
 | `frontend/src/i18n/resources/zh-CN.ts` | 中文 i18n |
 | `frontend/src/i18n/resources/en-US.ts` | 英文 i18n |
 | `frontend/scripts/check-bundle-size.js` | I-007 bundle size guard（非-worker raw ≤ 1MB / gzip ≤ 350KB；worker raw ≤ 8MB） |
+| `frontend/playwright.config.ts` | I-006 Playwright e2e 配置（chromium，serial，globalSetup 起 backend，webServer 起 vite dev） |
+| `frontend/e2e/fixtures/backend.ts` | I-006 globalSetup：tmp sqlite + alembic + 动态端口 + uvicorn subprocess + /health polling + try/finally SIGKILL |
+| `frontend/e2e/fixtures/auth.ts` | I-006 test-scoped fixture：注册 e2e-* 用户 + localStorage 注入 token（`coderecall_token`） |
+| `frontend/e2e/auth.spec.ts` | I-006 6 cases：注册/登录/登出/AuthGuard/F5 reload/health sanity |
+| `frontend/e2e/mistakes.spec.ts` | I-006 3 cases：UI new 按钮/列表渲染/详情预填（API seed） |
+| `frontend/e2e/onboarding.spec.ts` | I-006 3 cases：空库 OnboardingPage/Demo 按钮/imported flag |
 
 ### CI / 工作流
 
 | 文件 | 作用 |
 |------|------|
 | `.github/workflows/openapi-sync.yml` | I-001 OpenAPI 漂移检测：跑 `bash scripts/gen-docs.sh` 后比对 `docs/openapi.json` |
-| `.github/workflows/security-scan.yml` | I-007 安全扫描：bandit（backend SAST）+ pip-audit（依赖 CVE，4 条 Accepted ignore 与 SECURITY.md 对齐）+ npm audit（high+，prod-only）+ bundle-size guard |
+| `.github/workflows/security-scan.yml` | I-007 安全扫描：bandit（backend SAST）+ pip-audit（依赖 CVE，1 条 Accepted ignore 与 SECURITY.md 对齐）+ npm audit（high+，prod-only）+ bundle-size guard |
+| `.github/workflows/e2e.yml` | I-006 Playwright e2e：装 backend venv + npm ci + cache chromium + `npm run e2e`；fail 时 upload `playwright-report/` artifact |
 
 ---
 
