@@ -14,7 +14,7 @@
 - GitHub：`https://github.com/northsea1225/CodeRecall`
 - 后端：FastAPI + SQLAlchemy + SQLite，Python 3.9.6（本地 venv at `backend/.venv`）
 - 前端：React 18 + TypeScript + Vite + Ant Design 5 + react-router-dom 7.1.x + Zustand 5
-- 测试：后端 **165 passed**（pytest），前端 **32 passed**（vitest，8 files）
+- 测试：后端 **197 passed**（pytest），前端 **40 passed**（vitest）
 - 已安装依赖：`passlib[bcrypt]` 1.7.4、`PyJWT` 2.12.1、`bcrypt==4.0.1`（pinned for passlib 兼容）
 - AI 模型：`deepseek-v4-pro`（主/高级）、`deepseek-v4-flash`（快速），配置在 `backend/.env`
 
@@ -47,14 +47,14 @@ API 文档：`http://localhost:8000/docs`
 
 ## 当前焦点
 
-**Audit-fixes Phase 2 完成（6/6） → 准备进入 Phase 3**（2026-05-01 更新）。
+**Audit-fixes Phase 3 完成（6/6 高优先级 + 关键基础设施） → 仅剩 M/L 收尾项**（2026-05-01 更新）。
 
 - 审阅产出：`docs/audit/2026-04-29/`（三方独立报告 Claude/Codex/Gemini + 综合 final-report.md）
 - 修复计划：`.claude/plan/audit-fixes.md`（41 个 issue × 4 个 Phase × 81h 工时，含 Codex 交叉验证合并决议）
-- **本次审阅识别出 5 个 Critical / 9 个 High / 13 个 Medium / 7 个 Low + 7 个改进**
-- **执行模式（重要）**：用户已授权本次 audit-fixes 由 Claude 亲自执行（直接 Edit/Write，不派 Codex/team agent），但仍需每次实施前呈报具体改动 + 等待确认（详见"协作规范 - 临时例外"）
+- **API 单一事实源**：`docs/openapi.json`（自动生成，CI gate 防漂移）；本地用 `bash scripts/gen-docs.sh` 重新生成
+- **执行模式**：用户在 Phase 2 起授权 Claude 亲自执行（直接 Edit/Write，不派 Codex/team），每次实施前仍呈报具体改动 + 等待确认。**新会话续做时建议重新和用户确认是否延续此例外**
 
-当前状态：backend **184 passed** · frontend **40 passed** · type-check 退出 0 · Alembic head: 0008
+当前状态：backend **197 passed** · frontend **40 passed** · type-check 退出 0 · Alembic head: **0009**
 
 ### Phase 1 已交付（5 个一行修复）
 
@@ -62,18 +62,51 @@ API 文档：`http://localhost:8000/docs`
 
 ### Phase 2 完成（6/6）
 
-| Issue | 状态 | Commit | 备注 |
-|-------|------|--------|------|
-| H-005（pin deps with hashes via pip-tools） | ✅ | `539b3c7` | requirements.in/.txt + .gitignore |
-| C-003 + I-005（IP 限流：auth/AI/import） | ✅ | `46482ef` | slowapi 0.1.9 + RATE_LIMIT_ENABLED env + autouse fixture |
-| H-003（SSRF：跨主机 redirect 拒绝） | ✅ | `fbc8339` | providers/base.py 加 safe_request helper + ALLOWED_REDIRECT_HOSTS |
-| H-004（/import payload 上限） | ✅ | `394c871` | BodySizeLimitMiddleware 50MB + Pydantic max_length |
-| L-001 + M-002 + M-003（router bridge + type-check） | ✅ | `1eed8c5` | utils/routerBridge.ts + npm run type-check |
-| C-002 + H-001（lifespan 重写） | ✅ | 本 commit | initialize_database 已有库 fail-fast；env.py 保护 root handlers；4 cases test_lifespan_migration |
+| Issue | Commit | 备注 |
+|-------|--------|------|
+| H-005 pin deps with hashes | `539b3c7` | requirements.in/.txt + .gitignore |
+| C-003 + I-005 IP 限流 | `46482ef` | slowapi 0.1.9 + RATE_LIMIT_ENABLED env |
+| H-003 SSRF 防护 | `fbc8339` | providers/base.py safe_request helper |
+| H-004 /import payload 上限 | `394c871` | BodySizeLimitMiddleware 50MB |
+| L-001 + M-002 + M-003 router bridge | `1eed8c5` | utils/routerBridge.ts + npm run type-check |
+| C-002 + H-001 lifespan 重写 | `9187264` | initialize_database 已有库 fail-fast；env.py 保护 root handlers |
 
-### Phase 3 起步说明
+### Phase 3 完成（6/6 高优先级）
 
-进入 Phase 3 前先重新和用户确认范围（plan §H-008 / H-009 / C-001 / H-007 / H-002+I-001 / H-006）。Phase 2 期间的「临时例外」按 CLAUDE.md 协作规范条款仍适用于 plan 范围内任务，但 Phase 3 涉及 user_id 必填 5 批等大改，建议先呈报最新方案再决定是否继续亲自执行。
+| Issue | Commit | 备注 |
+|-------|--------|------|
+| H-008 alembic_head_engine fixture | `9afd2db` | conftest fixture + 3 cases；解锁后续 |
+| H-009 schema parity | `cdd6747` | 5 个 user_id FK 加显式 name；test_schema_parity 兜底 |
+| C-001 user_id 必填（5 批） | `b201c9e` `46d9eb3` `c2013ad` `1c598b1` `2c02547` | 47 函数 keyword-only；3 fuse tests + 测试 helper 修正 |
+| H-007 review GET 去写 | `5779e58` | _progress_for_session 改纯读 + 删 _mark_session_completed_if_needed |
+| H-006 stats SQL push-down | `0cac770` | 5 函数 SQL 聚合 + alembic 0009（3 复合索引）+ heatmap 顺手修 |
+| H-002 + I-001 OpenAPI 单一源 | `534a5db` | scripts/gen-docs.sh + docs/openapi.json + GitHub Actions gate；删除 api-contract-current.md；修 4 处 `/auth/*` 错描述 |
+
+### Phase 3 剩余（M/L 项，约 13.5h，无依赖）
+
+| Issue | 工时 | 性质 | plan § |
+|-------|------|------|--------|
+| M-001 CORS 配置紧化 | ~1h | 后端 config | §882 |
+| M-004 Category/Tag schema 长度约束 | ~1h | 后端 schema | §920 |
+| M-006 list_mistakes 拆 MistakeListOut | ~2h | 后端+前端协调 | §946 |
+| M-008 i18n 5+ 组件 | ~2h | 前端 | §979 |
+| M-010 MAX_TITLE_LEN 200 vs 500 同步 | ~0.5h | ORM/schema/前端三方对齐 | §983 |
+| M-012 + L-004 useAiAnalysisStream 改进 | ~1h | 前端 | §1003 |
+| L-002 errors.py Optional[Any] schema 化 | ~1h | 后端 | §1020 |
+| L-003 _ensure_old_user 复用 SessionLocal | ~0.5h | 后端 | §1041 |
+| L-005 v3 import dedup 内存读 UUID | ~1.5h | 后端 | §1007 |
+| L-007 JWT secret check 强类型 | ~1h | 后端 | §1056 |
+
+### Phase 4 双月（约 30h，未启动）
+
+C-005 Token 安全改造 / I-006 Playwright e2e / I-004 PWA / I-007 CI 扫描 / I-008 Python 3.9→3.11。
+
+### 新会话续做指引
+
+1. 读 `.claude/plan/audit-fixes.md` 找具体 issue 的 8 段方案（Files / Implementation / Tests / Edge cases / Dependencies / Risks / Acceptance / Effort）
+2. 按 Phase 2/3 既有协作模式：调研 → 呈报方案 → 等"做"/"可以" → 落地 → 跑测试 → 提交
+3. 测试基准：每次提交前 `APP_ENV=test backend/.venv/bin/python -m pytest backend/tests/ -q` 应当 197+ passed（视新增测试而定）
+4. OpenAPI 同步：任何 backend 路由 / Pydantic schema 变更后跑 `bash scripts/gen-docs.sh` 重新生成 `docs/openapi.json`，否则 CI gate 会卡 PR
 
 > Month 1（用户认证 Phase A+B + schema_v3 + CF 导入）已于 2026-04-24 全部交付。
 > Month 2（Streak 打卡 + 暗房复习模式 + SSE 认证修复）已于 2026-04-25 交付。
@@ -81,7 +114,7 @@ API 文档：`http://localhost:8000/docs`
 > P1 稳定性修复（M2/M3/M4/M5/M-new）已于 2026-04-26 完成。
 > **全栈大规模审阅（三方独立 + 综合）**已于 2026-04-29 完成。
 > **Audit-fixes 计划（41 issue / 81h）**已于 2026-04-30 产出。
-> **Phase 2 完成 6/6（H-005 / C-003+I-005 / H-003 / H-004 / L-001+M-002+M-003 / C-002+H-001）**于 2026-05-01。
+> **Phase 2 完成 6/6** + **Phase 3 完成 6/6 高优先级** 于 2026-05-01。
 
 ---
 
