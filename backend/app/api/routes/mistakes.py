@@ -13,6 +13,13 @@ from app.services.mistake_service import create_mistake, delete_mistake, get_mis
 router = APIRouter(prefix="/mistakes", tags=["mistakes"])
 
 
+# I-004 phase 4: Cache-Control values that pair with the SW NetworkFirst
+# rules in vite.config.ts. "private" keeps shared proxies / CDNs from caching
+# user-scoped data; max-age matches the SW expiration window so the HTTP
+# cache layer and the SW cache fall over at the same time.
+_MISTAKE_CACHE_CONTROL = "private, max-age=300"
+
+
 @router.post("", response_model=MistakeOut, status_code=status.HTTP_201_CREATED)
 def create_mistake_route(
     payload: MistakeCreate,
@@ -25,6 +32,7 @@ def create_mistake_route(
 
 @router.get("", response_model=MistakeListResponse)
 def list_mistakes_route(
+    response: Response,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     category_id: Optional[int] = Query(default=None),
@@ -34,6 +42,7 @@ def list_mistakes_route(
     current_user: User = Depends(get_current_user),
 ) -> MistakeListResponse:
     """List mistakes with pagination and filters."""
+    response.headers["Cache-Control"] = _MISTAKE_CACHE_CONTROL
     return list_mistakes(
         db,
         user_id=current_user.id,
@@ -48,10 +57,12 @@ def list_mistakes_route(
 @router.get("/{mistake_id}", response_model=MistakeOut)
 def get_mistake_route(
     mistake_id: int,
+    response: Response,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> MistakeOut:
     """Fetch a mistake by id."""
+    response.headers["Cache-Control"] = _MISTAKE_CACHE_CONTROL
     return get_mistake(db, mistake_id, user_id=current_user.id)
 
 

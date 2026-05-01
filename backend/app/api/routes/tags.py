@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -11,13 +11,19 @@ from app.services.taxonomy_service import create_tag, delete_tag, get_tag, list_
 
 router = APIRouter(prefix="/tags", tags=["tags"])
 
+# I-004 phase 4: tags share the same near-static profile as categories;
+# matches SW api-taxonomy maxAgeSeconds=1800 in vite.config.ts.
+_TAXONOMY_CACHE_CONTROL = "private, max-age=1800"
+
 
 @router.get("", response_model=TagListResponse)
 def list_tags_route(
+    response: Response,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> TagListResponse:
     """List all tags."""
+    response.headers["Cache-Control"] = _TAXONOMY_CACHE_CONTROL
     items = list_tags(db, user_id=current_user.id)
     return TagListResponse(items=items, total=len(items))
 
@@ -35,10 +41,12 @@ def create_tag_route(
 @router.get("/{tag_id}", response_model=TagOut)
 def get_tag_route(
     tag_id: int,
+    response: Response,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> TagOut:
     """Fetch a tag by id."""
+    response.headers["Cache-Control"] = _TAXONOMY_CACHE_CONTROL
     return get_tag(db, tag_id, user_id=current_user.id)
 
 

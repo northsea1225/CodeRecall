@@ -55,3 +55,17 @@ def test_unallowed_origin_gets_no_acao() -> None:
     acao = r.headers.get("access-control-allow-origin")
     assert acao != "http://evil.com"
     assert acao != "*"
+
+
+def test_preflight_advertises_exposed_headers() -> None:
+    """I-004 phase 4: PWA / SW must be able to read ETag + Cache-Control off
+    fetch responses, which only happens when CORS exposes them."""
+    client = TestClient(app)
+    # expose-headers ships on real (non-preflight) responses, so issue a
+    # real GET to a route that always replies 200 without auth.
+    r = client.get("/health", headers={"origin": "http://localhost:5173"})
+    assert r.status_code == 200, r.text
+    aceh = r.headers.get("access-control-expose-headers", "").lower()
+    exposed = {h.strip() for h in aceh.split(",") if h.strip()}
+    assert "etag" in exposed, f"ETag not in expose-headers: {aceh!r}"
+    assert "cache-control" in exposed, f"Cache-Control not in expose-headers: {aceh!r}"
