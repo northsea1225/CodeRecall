@@ -20,7 +20,7 @@ import { listCategories } from "../../services/taxonomyService";
 import { useAuthStore } from "../../stores/authStore";
 import { useMistakeStore } from "../../stores/mistakeStore";
 import { useUIStore } from "../../stores/uiStore";
-import type { Category, Mistake } from "../../types/mistake";
+import type { Category, MistakeListItem } from "../../types/mistake";
 import OnboardingPage from "./OnboardingPage";
 
 const formatDate = (value: string, locale: string): string =>
@@ -94,7 +94,7 @@ export default function MistakeListPage() {
     };
   }, [showToast, t]);
 
-  const columns: ColumnsType<Mistake> = useMemo(
+  const columns: ColumnsType<MistakeListItem> = useMemo(
     () => [
       {
         title: t("mistakes.colTitle"),
@@ -265,7 +265,7 @@ export default function MistakeListPage() {
 
       {error ? <Alert type="error" message={error} showIcon /> : null}
 
-      <Table<Mistake>
+      <Table<MistakeListItem>
         rowKey="id"
         loading={loading}
         columns={columns}

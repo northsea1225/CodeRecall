@@ -7,7 +7,14 @@ from sqlalchemy.orm import Session
 
 from app.api.errors import raise_api_error, raise_not_found
 from app.repositories import MistakeRepository
-from app.schemas.mistake import MistakeCreate, MistakeListResponse, MistakeOut, MistakeUpdate, PaginationMeta
+from app.schemas.mistake import (
+    MistakeCreate,
+    MistakeListOut,
+    MistakeListResponse,
+    MistakeOut,
+    MistakeUpdate,
+    PaginationMeta,
+)
 from app.services.taxonomy_service import (
     get_category,
     get_or_create_tags,
@@ -22,6 +29,10 @@ def utc_now() -> datetime:
 
 def _serialize_mistake(mistake) -> MistakeOut:
     return MistakeOut.model_validate(mistake)
+
+
+def _serialize_list_item(mistake) -> MistakeListOut:
+    return MistakeListOut.model_validate(mistake)
 
 
 def _normalize_language(language: str) -> str:
@@ -61,7 +72,7 @@ def list_mistakes(
         keyword=normalized_keyword,
     )
     return MistakeListResponse(
-        items=[_serialize_mistake(item) for item in items],
+        items=[_serialize_list_item(item) for item in items],
         total=total,
         pagination=PaginationMeta(total=total, page=page, page_size=page_size),
     )

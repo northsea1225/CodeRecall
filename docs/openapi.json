@@ -1157,11 +1157,129 @@
         "title": "MistakeCreate",
         "type": "object"
       },
+      "MistakeListOut": {
+        "description": "Lightweight projection used by GET /mistakes (no large markdown fields).\n\nThe 4 markdown fields (stem / wrong / correct / error_reason) account for\n>80% of the list response payload but are never read by the list view —\ncallers fetch /mistakes/{id} when they need the full record.",
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/CategoryOut"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "difficulty": {
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Difficulty",
+            "type": "integer"
+          },
+          "ease_factor": {
+            "title": "Ease Factor",
+            "type": "number"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "interval_days": {
+            "title": "Interval Days",
+            "type": "integer"
+          },
+          "is_archived": {
+            "title": "Is Archived",
+            "type": "boolean"
+          },
+          "language": {
+            "maxLength": 50,
+            "title": "Language",
+            "type": "string"
+          },
+          "last_reviewed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Reviewed At"
+          },
+          "next_review_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Review At"
+          },
+          "repetition": {
+            "title": "Repetition",
+            "type": "integer"
+          },
+          "review_count": {
+            "title": "Review Count",
+            "type": "integer"
+          },
+          "source": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MistakeStatus"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/TagOut"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 200,
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "language",
+          "difficulty",
+          "status",
+          "is_archived",
+          "category",
+          "tags",
+          "review_count",
+          "last_reviewed_at",
+          "next_review_at",
+          "ease_factor",
+          "interval_days",
+          "repetition",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "MistakeListOut",
+        "type": "object"
+      },
       "MistakeListResponse": {
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/MistakeOut"
+              "$ref": "#/components/schemas/MistakeListOut"
             },
             "title": "Items",
             "type": "array"

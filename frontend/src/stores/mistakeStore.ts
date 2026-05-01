@@ -3,7 +3,7 @@ import { useStore } from "zustand";
 
 import { extractApiErrorMessage } from "../services/api";
 import { listMistakes as listMistakesService } from "../services/mistakeService";
-import type { Mistake, PaginationMeta } from "../types/mistake";
+import type { MistakeListItem, PaginationMeta } from "../types/mistake";
 import { useAuthStore } from "./authStore";
 
 export interface MistakeFilters {
@@ -15,7 +15,7 @@ export interface MistakeFilters {
 }
 
 export interface MistakeStoreState {
-  list: Mistake[];
+  list: MistakeListItem[];
   pagination: PaginationMeta;
   filters: MistakeFilters;
   hasFetched: boolean;

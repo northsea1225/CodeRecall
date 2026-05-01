@@ -10,7 +10,7 @@ import { getStatsOverview } from "../../services/statsService";
 import { useReviewStore } from "../../stores/reviewStore";
 import { listCategories, listTags } from "../../services/taxonomyService";
 import { useUIStore } from "../../stores/uiStore";
-import type { Category, Mistake, Tag as TaxonomyTag } from "../../types/mistake";
+import type { Category, MistakeListItem, Tag as TaxonomyTag } from "../../types/mistake";
 
 export default function DashboardPage() {
   const { t } = useTranslation();
@@ -19,7 +19,7 @@ export default function DashboardPage() {
   const startReviewSession = useReviewStore((state) => state.startSession);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [recentMistakes, setRecentMistakes] = useState<Mistake[]>([]);
+  const [recentMistakes, setRecentMistakes] = useState<MistakeListItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [tags, setTags] = useState<TaxonomyTag[]>([]);
   const [totalMistakes, setTotalMistakes] = useState(0);

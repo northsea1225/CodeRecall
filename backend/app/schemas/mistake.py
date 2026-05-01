@@ -84,7 +84,36 @@ class MistakeOut(MistakeBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class MistakeListOut(BaseModel):
+    """Lightweight projection used by GET /mistakes (no large markdown fields).
+
+    The 4 markdown fields (stem / wrong / correct / error_reason) account for
+    >80% of the list response payload but are never read by the list view —
+    callers fetch /mistakes/{id} when they need the full record.
+    """
+
+    id: int
+    title: MistakeTitle
+    language: MistakeLanguage
+    difficulty: int = Field(ge=1, le=5)
+    source: MistakeSource = ""
+    status: MistakeStatus
+    is_archived: bool
+    category: CategoryOut
+    tags: list[TagOut]
+    review_count: int
+    last_reviewed_at: Optional[datetime]
+    next_review_at: Optional[datetime]
+    ease_factor: float
+    interval_days: int
+    repetition: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class MistakeListResponse(BaseModel):
-    items: list[MistakeOut]
+    items: list[MistakeListOut]
     total: int
     pagination: PaginationMeta

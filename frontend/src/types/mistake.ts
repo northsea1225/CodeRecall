@@ -64,6 +64,18 @@ export interface Mistake {
   updated_at: string;
 }
 
+// Lightweight projection returned by GET /mistakes (list endpoint).
+// The 4 markdown fields (stem / wrong / correct / error_reason) are stripped
+// at the API layer to keep list responses small. Use Mistake (the full
+// record) for /mistakes/{id} responses.
+export type MistakeListItem = Omit<
+  Mistake,
+  | "stem_markdown"
+  | "wrong_answer_markdown"
+  | "correct_answer_markdown"
+  | "error_reason_markdown"
+>;
+
 export interface MistakeCreate {
   title: string;
   stem_markdown: string;
@@ -94,7 +106,7 @@ export interface MistakeUpdate {
 }
 
 export interface MistakeListResponse {
-  items: Mistake[];
+  items: MistakeListItem[];
   total: number;
   pagination: PaginationMeta;
 }
