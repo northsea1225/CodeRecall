@@ -30,6 +30,20 @@ function getBearerToken(): string {
   }
 }
 
+// Pure type guard for HTTP error response bodies. Accepts the
+// `unknown` returned by `response.json()` and pulls out the first
+// usable `detail` or `message` string, or returns `null` so the
+// caller can fall back to a generic message.
+export function parseErrorBody(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") return null;
+  const obj = payload as Record<string, unknown>;
+  const detail = obj.detail;
+  if (typeof detail === "string") return detail;
+  const message = obj.message;
+  if (typeof message === "string") return message;
+  return null;
+}
+
 export function useAiAnalysisStream() {
   const abortRef = useRef<AbortController | null>(null);
   const lastRequestRef = useRef<StreamRequest | null>(null);
@@ -69,18 +83,12 @@ export function useAiAnalysisStream() {
       if (!response.ok) {
         let msg = "AI 分析失败，请稍后重试。";
         try {
-          const body = (await response.json()) as unknown;
-          if (body && typeof body === "object") {
-            const detail = (body as { detail?: unknown }).detail;
-            const message = (body as { message?: unknown }).message;
-            if (typeof detail === "string") {
-              msg = detail;
-            } else if (typeof message === "string") {
-              msg = message;
-            }
+          const body: unknown = await response.json();
+          msg = parseErrorBody(body) ?? msg;
+        } catch (parseErr) {
+          if (import.meta.env.DEV) {
+            console.warn("[useAiAnalysisStream] error body is not JSON:", parseErr);
           }
-        } catch {
-          /* ignore */
         }
         setSnapshot({ status: "error", content: "", error: msg });
         return;
@@ -119,8 +127,10 @@ export function useAiAnalysisStream() {
               try {
                 const errPayload = JSON.parse(dataLine) as { message?: string };
                 errMsg = errPayload.message ?? errMsg;
-              } catch {
-                /* use default */
+              } catch (parseErr) {
+                if (import.meta.env.DEV) {
+                  console.warn("[useAiAnalysisStream] error event payload is not JSON:", parseErr);
+                }
               }
               setSnapshot((cur) => ({
                 status: "error",
@@ -145,7 +155,10 @@ export function useAiAnalysisStream() {
                 }));
               }
             } catch {
-              /* malformed event — skip */
+              // Silent on purpose: SSE delta lines may be partial frames or
+              // protocol noise (keep-alive comments, fragment boundaries).
+              // dev-mode console.warn here would be too chatty for normal
+              // streaming traffic.
             }
           }
         }
