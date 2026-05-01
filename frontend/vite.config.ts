@@ -56,7 +56,7 @@ export default defineConfig({
       workbox: {
         // Precache only small static shell assets. Monaco language workers
         // (>3 MB each) are excluded so first paint stays fast and SW quota
-        // does not balloon. API runtime caching is configured in Phase 3.
+        // does not balloon.
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         globIgnores: [
           "**/ts.worker-*.js",
@@ -76,6 +76,46 @@ export default defineConfig({
           /^\/health$/,
           /^\/docs/,
           /^\/openapi/,
+        ],
+        // Phase 3: GET-only NetworkFirst caching for the routes that actually
+        // make "see your mistakes offline" useful. Network is tried first
+        // (timeout 3s), cache is the fallback. Auth/AI/SSE/import/export/
+        // review/stats are intentionally NOT in this list so they never get
+        // cached — they pass through the SW and hit the network directly.
+        // Non-GET requests (POST/PATCH/DELETE) never match these rules
+        // because each handler pins method='GET'.
+        runtimeCaching: [
+          {
+            // /api/v1/mistakes (list) and /api/v1/mistakes/:id (detail)
+            urlPattern: /\/api\/v1\/mistakes(?:\/[^/]+)?$/,
+            handler: "NetworkFirst",
+            method: "GET",
+            options: {
+              cacheName: "api-mistakes",
+              networkTimeoutSeconds: 3,
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 5 * 60,
+              },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // /api/v1/categories(/:id) and /api/v1/tags(/:id) — taxonomy is
+            // near-static, so allow longer TTL and smaller pool.
+            urlPattern: /\/api\/v1\/(?:categories|tags)(?:\/[^/]+)?$/,
+            handler: "NetworkFirst",
+            method: "GET",
+            options: {
+              cacheName: "api-taxonomy",
+              networkTimeoutSeconds: 3,
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 30 * 60,
+              },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
         ],
       },
     }),
