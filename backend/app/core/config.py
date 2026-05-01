@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     app_name: str = Field(default="CodeRecall API", alias="APP_NAME")
     app_env: AppEnv = Field(default=AppEnv.DEVELOPMENT, alias="APP_ENV")
     api_v1_prefix: str = Field(default="/api/v1", alias="API_V1_PREFIX")
-    backend_host: str = Field(default="0.0.0.0", alias="BACKEND_HOST")
+    backend_host: str = Field(default="0.0.0.0", alias="BACKEND_HOST")  # nosec B104 — dev default; production overrides via env or runs behind a reverse proxy (see SECURITY.md)
     backend_port: int = Field(default=8000, alias="BACKEND_PORT")
     frontend_origin: str = Field(default="http://localhost:5173", alias="FRONTEND_ORIGIN")
     database_url: str = Field(default="sqlite:///./coderecall.db", alias="DATABASE_URL")

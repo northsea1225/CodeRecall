@@ -322,6 +322,14 @@ C-005 Token 安全改造 / I-006 Playwright e2e / I-004 PWA / I-007 CI 扫描 / 
 | `frontend/src/styles/global.css` | 全局样式，布局规则，暗房/Dashboard 专属 class |
 | `frontend/src/i18n/resources/zh-CN.ts` | 中文 i18n |
 | `frontend/src/i18n/resources/en-US.ts` | 英文 i18n |
+| `frontend/scripts/check-bundle-size.js` | I-007 bundle size guard（非-worker raw ≤ 1MB / gzip ≤ 350KB；worker raw ≤ 8MB） |
+
+### CI / 工作流
+
+| 文件 | 作用 |
+|------|------|
+| `.github/workflows/openapi-sync.yml` | I-001 OpenAPI 漂移检测：跑 `bash scripts/gen-docs.sh` 后比对 `docs/openapi.json` |
+| `.github/workflows/security-scan.yml` | I-007 安全扫描：bandit（backend SAST）+ pip-audit（依赖 CVE，4 条 Accepted ignore 与 SECURITY.md 对齐）+ npm audit（high+，prod-only）+ bundle-size guard |
 
 ---
 
