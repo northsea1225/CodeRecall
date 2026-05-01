@@ -48,7 +48,7 @@ def tmp_sqlite_url(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> str:
 def test_empty_db_with_successful_migrations_upgrades_to_head(tmp_sqlite_url: str) -> None:
     init_db.initialize_database(tmp_sqlite_url)
 
-    assert _alembic_version(tmp_sqlite_url) == "0009"
+    assert _alembic_version(tmp_sqlite_url) == "0010"
     assert _has_table(tmp_sqlite_url, "mistakes")
     assert _has_table(tmp_sqlite_url, "users")
 
@@ -83,7 +83,7 @@ def test_existing_db_with_successful_migration_upgrades_to_head(tmp_sqlite_url: 
 
     init_db.initialize_database(tmp_sqlite_url)
 
-    assert _alembic_version(tmp_sqlite_url) == "0009"
+    assert _alembic_version(tmp_sqlite_url) == "0010"
 
 
 def test_existing_db_with_failing_migration_fails_fast(

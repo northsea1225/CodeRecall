@@ -72,7 +72,7 @@ def test_alembic_head_engine_is_at_head_revision(alembic_head_engine) -> None:
 
     with alembic_head_engine.connect() as conn:
         version = conn.execute(sa.text("SELECT version_num FROM alembic_version")).scalar()
-    assert version == "0009"
+    assert version == "0010"
 
     mistake_indexes = {idx["name"] for idx in inspector.get_indexes("mistakes")}
     assert "ix_mistakes_user_uuid" in mistake_indexes, (

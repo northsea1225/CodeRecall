@@ -1090,7 +1090,7 @@
           },
           "source": {
             "default": "",
-            "maxLength": 500,
+            "maxLength": 200,
             "title": "Source",
             "type": "string"
           },
@@ -1112,7 +1112,7 @@
             "type": "array"
           },
           "title": {
-            "maxLength": 500,
+            "maxLength": 200,
             "title": "Title",
             "type": "string"
           },
@@ -1241,7 +1241,7 @@
           },
           "source": {
             "default": "",
-            "maxLength": 500,
+            "maxLength": 200,
             "title": "Source",
             "type": "string"
           },
@@ -1263,7 +1263,7 @@
             "type": "array"
           },
           "title": {
-            "maxLength": 500,
+            "maxLength": 200,
             "title": "Title",
             "type": "string"
           },
@@ -1388,7 +1388,7 @@
           "source": {
             "anyOf": [
               {
-                "maxLength": 500,
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -1426,7 +1426,7 @@
           "title": {
             "anyOf": [
               {
-                "maxLength": 500,
+                "maxLength": 200,
                 "type": "string"
               },
               {

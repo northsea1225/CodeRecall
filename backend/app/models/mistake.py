@@ -48,7 +48,7 @@ class Mistake(Base):
         nullable=True,
         default=lambda: str(uuid4()),
     )
-    title: Mapped[str] = mapped_column(String(255), index=True)
+    title: Mapped[str] = mapped_column(String(200), index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", name="fk_mistakes_user_id_users"), index=True, nullable=False)
     stem_markdown: Mapped[str] = mapped_column(Text)
     wrong_answer_markdown: Mapped[str] = mapped_column(Text)
@@ -57,7 +57,7 @@ class Mistake(Base):
     language: Mapped[str] = mapped_column(String(50), index=True)
     category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"), index=True)
     difficulty: Mapped[int] = mapped_column(Integer)
-    source: Mapped[str] = mapped_column(String(255), default="", server_default="")
+    source: Mapped[str] = mapped_column(String(200), default="", server_default="")
     status: Mapped[MistakeStatus] = mapped_column(
         SqlEnum(MistakeStatus, name="mistake_status", native_enum=False),
         default=MistakeStatus.NEW,
