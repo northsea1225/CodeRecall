@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Alert, Button, Card, Input, Space, Typography } from "antd";
+import { useTranslation } from "react-i18next";
 import { previewProblemUrl, type ProblemUrlPreviewResponse } from "../../services/problemImportService";
 
 interface ProblemUrlImporterProps {
@@ -10,6 +11,7 @@ interface ProblemUrlImporterProps {
 const SUPPORTED_URL_PATTERN = /^https?:\/\/(www\.)?(leetcode\.(com|cn)|codeforces\.com)\//i;
 
 export default function ProblemUrlImporter({ onFilled, autoFocus }: ProblemUrlImporterProps) {
+  const { t } = useTranslation();
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +20,7 @@ export default function ProblemUrlImporter({ onFilled, autoFocus }: ProblemUrlIm
   const handleFetch = async () => {
     const trimmed = url.trim();
     if (!SUPPORTED_URL_PATTERN.test(trimmed)) {
-      setError("请输入支持的平台链接（LeetCode 或 Codeforces）");
+      setError(t("urlImport.unsupportedPlatform"));
       return;
     }
     setLoading(true);
@@ -33,7 +35,7 @@ export default function ProblemUrlImporter({ onFilled, autoFocus }: ProblemUrlIm
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: { detail?: { message?: string } } } })
         ?.response?.data?.detail;
-      setError(detail?.message ?? "抓取失败，请手动填写题面");
+      setError(detail?.message ?? t("urlImport.fetchFailed"));
     } finally {
       setLoading(false);
     }
@@ -42,18 +44,18 @@ export default function ProblemUrlImporter({ onFilled, autoFocus }: ProblemUrlIm
   return (
     <Card className="panel-card">
       <Space direction="vertical" style={{ width: "100%" }}>
-        <Typography.Text strong>从 OJ 链接导入题面</Typography.Text>
+        <Typography.Text strong>{t("urlImport.title")}</Typography.Text>
         <Space.Compact style={{ width: "100%" }}>
           <Input
             autoFocus={autoFocus}
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="粘贴 LeetCode 或 Codeforces 题目链接自动提取"
+            placeholder={t("urlImport.placeholder")}
             disabled={loading}
             onPressEnter={() => void handleFetch()}
           />
           <Button type="primary" loading={loading} onClick={() => void handleFetch()} disabled={!url.trim()}>
-            抓取
+            {t("urlImport.fetchButton")}
           </Button>
         </Space.Compact>
         {error && (
@@ -70,7 +72,7 @@ export default function ProblemUrlImporter({ onFilled, autoFocus }: ProblemUrlIm
           />
         ))}
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          当前支持 LeetCode（中英文站）与 Codeforces。
+          {t("urlImport.supportedPlatforms")}
         </Typography.Text>
       </Space>
     </Card>

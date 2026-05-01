@@ -1,5 +1,6 @@
 import { Card, Result, Space, Typography } from "antd";
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 interface ReviewPageStateProps {
   subtitle: string;
@@ -18,11 +19,12 @@ export default function ReviewPageState({
   extra,
   children,
 }: ReviewPageStateProps) {
+  const { t } = useTranslation();
   return (
     <div className="page-stack">
       <div className="page-title-copy">
         <Typography.Title level={2} style={{ margin: 0 }}>
-          Review
+          {t("review.pageTitle")}
         </Typography.Title>
         <p className="page-subtitle">{subtitle}</p>
       </div>

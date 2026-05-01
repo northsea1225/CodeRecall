@@ -180,7 +180,7 @@ export default function MistakeEditorPage() {
     };
     patchDraft(draftKey, patch);
     form.setFieldsValue(patch);
-    showToast("success", "已自动填充题面信息，请补充错误代码和错因");
+    showToast("success", t("editor.urlAutoFillSuccess"));
   };
 
   const handleSave = async () => {

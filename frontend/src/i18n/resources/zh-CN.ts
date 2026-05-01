@@ -103,6 +103,7 @@ const zhCN = {
     createSuccess: '错题已创建。',
     categoryRequired: '分类不能为空。',
     saveFailed: '保存失败。',
+    urlAutoFillSuccess: '已自动填充题面信息，请补充错误代码和错因',
   },
   review: {
     titleStart: '开始今日复习',
@@ -131,6 +132,7 @@ const zhCN = {
     streakMilestone30: '里程碑：连续 30 天！🏆',
     enterImmersive: '暗房模式',
     exitImmersive: '退出暗房',
+    pageTitle: '复习',
   },
   reviewComponents: {
     completedTitle: '复习完成！',
@@ -240,6 +242,36 @@ const zhCN = {
     heatmapTooltip: '{{date}} 完成 {{count}} 次复习',
     heatmapCellAria: '{{date}} {{count}} 次',
     noHeatmapData: '开启复习即可点亮小格子',
+  },
+  urlImport: {
+    title: '从 OJ 链接导入题面',
+    placeholder: '粘贴 LeetCode 或 Codeforces 题目链接自动提取',
+    fetchButton: '抓取',
+    unsupportedPlatform: '请输入支持的平台链接（LeetCode 或 Codeforces）',
+    fetchFailed: '抓取失败，请手动填写题面',
+    supportedPlatforms: '当前支持 LeetCode（中英文站）与 Codeforces。',
+  },
+  variant: {
+    title: 'AI 变体题',
+    generate: '生成变体题',
+    regenerate: '重新生成',
+    generateFailed: '生成失败，请重试',
+    tooltip: '点击右上角「生成变体题」，AI 将基于原题生成同类陷阱的新题目。',
+    tag: '变体题',
+    hintLabel: '陷阱提示：',
+    showHint: '显示陷阱提示',
+  },
+  onboarding: {
+    heroTitle: 'AC 的最后一块拼图',
+    heroSubtitle: '专注逻辑短板，自动提取错因，定制你的专属遗忘曲线',
+    demoLineDel: '- int sum = a * b;  // ❌ 整型溢出',
+    demoLineAdd: '+ long long sum = (long long)a * b;',
+    demoLineInfo: '💡 AI: 发现 int 溢出，建议改用 long long',
+    loadDemo: '⚡ 载入经典错误 Demo 体验',
+    createBlank: '手动创建空白错题',
+    urlFillSuccess: '题面已抓取，请补充错误代码和错因',
+    demoLoaded: 'Demo 数据已载入',
+    demoLoadFailed: 'Demo 数据载入失败',
   },
 } as const;
 export default zhCN;

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button, Space, Typography, message } from "antd";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 import ProblemUrlImporter from "../../components/common/ProblemUrlImporter";
 import { importPayload } from "../../services/importExportService";
@@ -15,6 +16,7 @@ interface Props {
 
 export default function OnboardingPage({ userId, onImported }: Props) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [loadingDemo, setLoadingDemo] = useState(false);
   const patchDraft = useDraftStore((s) => s.patchDraft);
   const importedKey = `coderecall_ever_imported_${userId}`;
@@ -29,7 +31,7 @@ export default function OnboardingPage({ userId, onImported }: Props) {
     };
     patchDraft("new", patch);
     localStorage.setItem(importedKey, "1");
-    void message.success("题面已抓取，请补充错误代码和错因");
+    void message.success(t("onboarding.urlFillSuccess"));
     navigate("/mistakes/new");
   };
 
@@ -39,9 +41,9 @@ export default function OnboardingPage({ userId, onImported }: Props) {
       await importPayload(demoData as Parameters<typeof importPayload>[0], "skip_existing");
       localStorage.setItem(importedKey, "1");
       onImported();
-      void message.success("Demo 数据已载入");
+      void message.success(t("onboarding.demoLoaded"));
     } catch {
-      void message.error("Demo 数据载入失败");
+      void message.error(t("onboarding.demoLoadFailed"));
     } finally {
       setLoadingDemo(false);
     }
@@ -60,17 +62,17 @@ export default function OnboardingPage({ userId, onImported }: Props) {
       }}
     >
       <Typography.Title level={2} style={{ marginBottom: 8 }}>
-        AC 的最后一块拼图
+        {t("onboarding.heroTitle")}
       </Typography.Title>
       <Typography.Paragraph type="secondary" style={{ fontSize: 16, marginBottom: 32 }}>
-        专注逻辑短板，自动提取错因，定制你的专属遗忘曲线
+        {t("onboarding.heroSubtitle")}
       </Typography.Paragraph>
 
       {/* 代码预览卡 */}
       <div className="onboarding-diff-card">
-        <div className="diff-del">- int sum = a * b;  // ❌ 整型溢出</div>
-        <div className="diff-add">+ long long sum = (long long)a * b;</div>
-        <div className="diff-info">💡 AI: 发现 int 溢出，建议改用 long long</div>
+        <div className="diff-del">{t("onboarding.demoLineDel")}</div>
+        <div className="diff-add">{t("onboarding.demoLineAdd")}</div>
+        <div className="diff-info">{t("onboarding.demoLineInfo")}</div>
       </div>
 
       {/* URL 导入 */}
@@ -86,10 +88,10 @@ export default function OnboardingPage({ userId, onImported }: Props) {
           loading={loadingDemo}
           onClick={() => void handleLoadDemo()}
         >
-          ⚡ 载入经典错误 Demo 体验
+          {t("onboarding.loadDemo")}
         </Button>
         <Button type="link" onClick={() => navigate("/mistakes/new")}>
-          手动创建空白错题
+          {t("onboarding.createBlank")}
         </Button>
       </Space>
     </div>

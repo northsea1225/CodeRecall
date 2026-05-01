@@ -103,6 +103,7 @@ const enUS = {
     createSuccess: 'Mistake created.',
     categoryRequired: 'Category is required.',
     saveFailed: 'Save failed.',
+    urlAutoFillSuccess: 'Problem auto-filled — please add the wrong code and error reason',
   },
   review: {
     titleStart: "Start Today's Review",
@@ -131,6 +132,7 @@ const enUS = {
     streakMilestone30: 'Milestone: 30-day streak! 🏆',
     enterImmersive: 'Focus Mode',
     exitImmersive: 'Exit Focus',
+    pageTitle: 'Review',
   },
   reviewComponents: {
     completedTitle: 'Review complete!',
@@ -240,6 +242,36 @@ const enUS = {
     heatmapTooltip: '{{date}} completed {{count}} reviews',
     heatmapCellAria: '{{date}} {{count}} reviews',
     noHeatmapData: 'Start reviewing to light up the grid',
+  },
+  urlImport: {
+    title: 'Import from OJ URL',
+    placeholder: 'Paste a LeetCode or Codeforces URL to auto-extract',
+    fetchButton: 'Fetch',
+    unsupportedPlatform: 'Please enter a supported platform URL (LeetCode or Codeforces)',
+    fetchFailed: 'Fetch failed, please fill in the problem manually',
+    supportedPlatforms: 'Supported: LeetCode (CN / EN) and Codeforces.',
+  },
+  variant: {
+    title: 'AI Variant Problem',
+    generate: 'Generate Variant',
+    regenerate: 'Regenerate',
+    generateFailed: 'Generation failed, please retry',
+    tooltip: 'Click "Generate Variant" in the top right — AI will create a new problem with the same trap pattern.',
+    tag: 'Variant',
+    hintLabel: 'Trap hint:',
+    showHint: 'Show Trap Hint',
+  },
+  onboarding: {
+    heroTitle: 'The last piece of the AC puzzle',
+    heroSubtitle: 'Focus on logic gaps, extract error reasons automatically, build your own forgetting curve',
+    demoLineDel: '- int sum = a * b;  // ❌ Int overflow',
+    demoLineAdd: '+ long long sum = (long long)a * b;',
+    demoLineInfo: '💡 AI: int overflow detected, use long long',
+    loadDemo: '⚡ Load Classic-Mistake Demo',
+    createBlank: 'Create blank mistake',
+    urlFillSuccess: 'Problem fetched — please add the wrong code and error reason',
+    demoLoaded: 'Demo data loaded',
+    demoLoadFailed: 'Failed to load demo data',
   },
 } as const;
 export default enUS;
