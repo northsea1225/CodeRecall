@@ -17,6 +17,7 @@ from __future__ import annotations
 import time as time_module
 from datetime import datetime, timedelta, timezone
 
+import pytest
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
@@ -87,18 +88,24 @@ def test_overview_handles_negative_tz_offset(alembic_head_engine) -> None:
     """
     with Session(alembic_head_engine, expire_on_commit=False) as db:
         user_id, mistake_id = _make_user_with_mistake(db)
-        # 2 logs explicitly placed mid-day in UTC-8 local time today, then commit.
         local_tz = timezone(timedelta(minutes=-480))
         now_local = datetime.now(local_tz).replace(microsecond=0)
-        midday_local = now_local.replace(hour=12, minute=0, second=0)
-        if midday_local > now_local:
-            midday_local -= timedelta(days=1)
-        _insert_log(db, user_id=user_id, mistake_id=mistake_id, shown_at=midday_local)
+        # Skip the rare case where UTC-8 local time is within the first 5
+        # minutes of a new day; the test inserts two logs slightly before
+        # `now_local` and would otherwise cross the local-day boundary.
+        if now_local.hour == 0 and now_local.minute < 5:
+            pytest.skip("UTC-8 local time too close to midnight; day-boundary unstable")
+        # Place both logs slightly before `now_local` so they always land in
+        # today's UTC-8 bucket regardless of when the test runs. The previous
+        # fallback to "yesterday at noon" was a test bug — when run before
+        # local noon it pushed both logs into yesterday but still asserted
+        # reviewed_today == 2.
+        _insert_log(db, user_id=user_id, mistake_id=mistake_id, shown_at=now_local - timedelta(seconds=30))
         _insert_log(
             db,
             user_id=user_id,
             mistake_id=mistake_id,
-            shown_at=midday_local - timedelta(hours=1),
+            shown_at=now_local - timedelta(minutes=2),
         )
         db.commit()
 
