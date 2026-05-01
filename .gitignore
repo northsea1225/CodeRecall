@@ -13,6 +13,7 @@ __pycache__/
 .coverage
 htmlcov/
 .venv/
+.venv-*/
 venv/
 
 node_modules/

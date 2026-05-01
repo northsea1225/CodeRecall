@@ -1,9 +1,9 @@
 # CodeRecall / 码错本
 
-![Python 3.9.6](https://img.shields.io/badge/Python-3.9.6-blue.svg)
+![Python 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)
 ![Node 18+](https://img.shields.io/badge/Node-18%2B-green.svg)
-![pytest](https://img.shields.io/badge/pytest-165%20passed-success.svg)
-![vitest](https://img.shields.io/badge/vitest-32%20passed-success.svg)
+![pytest](https://img.shields.io/badge/pytest-229%20passed-success.svg)
+![vitest](https://img.shields.io/badge/vitest-45%20passed-success.svg)
 
 **CodeRecall / 码错本** is an intelligent, spaced-repetition programming mistake notebook for OI/ACM/LeetCode competitors. Core differentiators: 6-stage dynamic AI coaching (adapts to your review history, not generic replies) + SM-2 forgetting-curve scheduling + one-click LeetCode/Codeforces import.
 
@@ -75,13 +75,12 @@ Backend dependencies are pinned with hashes via [`pip-tools`](https://pip-tools.
 3. Verify in a clean venv:
    ```bash
    pip install --require-hashes -r requirements.txt
-   pytest tests/ -q                                                    # 165 passed
+   pytest tests/ -q                                                    # 229 passed
    pip-audit --strict --requirement requirements.txt \
-     --ignore-vuln GHSA-wp53-j4wj-2cfg --ignore-vuln GHSA-mj87-hwqh-73pj \
-     --ignore-vuln GHSA-mf9w-mj56-hr94 --ignore-vuln GHSA-6w46-j5rx-g56g
+     --ignore-vuln GHSA-6w46-j5rx-g56g
    ```
 
-`requirements.txt` is generated — **do not edit it by hand**. Accepted CVEs (Python 3.9 constraint) are documented in [`SECURITY.md`](SECURITY.md#accepted-cves-python-39-constraint).
+`requirements.txt` is generated — **do not edit it by hand**. The remaining accepted CVE (pytest, test-only) is documented in [`SECURITY.md`](SECURITY.md#accepted-cves).
 
 ## ⚙️ Environment Variables
 
@@ -161,7 +160,7 @@ curl -X POST http://localhost:8000/api/v1/auth/token \
 
 ```bash
 # Run all tests (from backend/)
-.venv/bin/python -m pytest -q          # expected: 165 passed
+.venv/bin/python -m pytest -q          # expected: 229 passed
 
 # Format / lint
 black app tests
@@ -171,7 +170,7 @@ flake8 app tests
 ### Frontend
 
 ```bash
-npm test -- --run          # expected: 32 passed (8 files)
+npm test -- --run          # expected: 45 passed (10 files)
 npm run type-check
 npm run build
 ```

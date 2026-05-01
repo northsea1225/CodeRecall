@@ -12,7 +12,7 @@
 
 - 项目路径：`/Users/hfish/Claude_chat/协同码力/`
 - GitHub：`https://github.com/northsea1225/CodeRecall`
-- 后端：FastAPI + SQLAlchemy + SQLite，Python 3.9.6（本地 venv at `backend/.venv`）
+- 后端：FastAPI + SQLAlchemy + SQLite，Python 3.11（本地 venv at `backend/.venv`）
 - 前端：React 18 + TypeScript + Vite + Ant Design 5 + react-router-dom 7.1.x + Zustand 5
 - 测试：后端 **197 passed**（pytest），前端 **40 passed**（vitest）
 - 已安装依赖：`passlib[bcrypt]` 1.7.4、`PyJWT` 2.12.1、`bcrypt==4.0.1`（pinned for passlib 兼容）

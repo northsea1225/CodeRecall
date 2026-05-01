@@ -22,7 +22,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.11'
 
       - name: Install bandit
         run: pip install 'bandit~=1.7'
@@ -38,7 +38,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.11'
 
       - name: Install pip-audit
         run: pip install 'pip-audit~=2.7'
