@@ -47,14 +47,52 @@ API 文档：`http://localhost:8000/docs`
 
 ## 当前焦点
 
-**Audit-fixes Phase 3 全清（高优先级 6/6 + M/L 收尾 10/10） → 仅剩 Phase 4 双月项**（2026-05-01 更新）。
+**Audit-fixes Phase 3 全清（高优先级 6/6 + M/L 收尾 10/10） → Phase 4 双月（5 项 / ~30h）准备启动**（2026-05-01 更新）。
 
 - 审阅产出：`docs/audit/2026-04-29/`（三方独立报告 Claude/Codex/Gemini + 综合 final-report.md）
 - 修复计划：`.claude/plan/audit-fixes.md`（41 个 issue × 4 个 Phase × 81h 工时，含 Codex 交叉验证合并决议）
 - **API 单一事实源**：`docs/openapi.json`（自动生成，CI gate 防漂移）；本地用 `bash scripts/gen-docs.sh` 重新生成
-- **执行模式**：用户在 Phase 2 起授权 Claude 亲自执行（直接 Edit/Write，不派 Codex/team），每次实施前仍呈报具体改动 + 等待确认。**新会话续做时建议重新和用户确认是否延续此例外**
+- **执行模式**：Phase 2/3 期间用户授权 Claude 亲自执行（直接 Edit/Write，不派 Codex/team）。**Phase 3 已全清，临时例外随之失效**。Phase 4 默认回到「讨论 → 呈报 → 用户授权 → 派发 Codex/team」原协作流程，除非用户在新会话里重新授权例外。
 
-当前状态：backend **229 passed** · frontend **45 passed** · type-check 退出 0 · Alembic head: **0010**
+当前状态：backend **229 passed** · frontend **45 passed** · type-check 退出 0 · Alembic head: **0010** · origin/main 完全同步
+
+### Phase 4 启动指南（新会话必读）
+
+**协作模式 — 用户在第一轮就要拍板**：
+- **A**（延续例外）：Claude 直接 Edit/Write，每次实施前仍呈方案 + 等"做"/"可以"
+- **B**（默认协作）：Claude 讨论 → 呈方案 → 派 Codex / team 执行 → 复核
+- **C**（混合）：低风险（I-007 CI / I-008 Python 升级）走 A，高风险（C-005 Token / I-004 PWA / I-006 e2e）走 B
+
+**Phase 4 5 项 issue 概览**：
+
+| Issue | 性质 | 工时 | plan § | 依赖 | 风险 |
+|-------|------|------|--------|------|------|
+| **I-007** CI 安全扫描 | 后端 + GitHub Actions | 2h | §1189 | 无 | 低（纯 yaml 增补 + bandit/pip-audit/npm audit/bundle size） |
+| **I-008** Python 3.9 → 3.11 | 后端 venv + 部署 | 4-6h | §1216 | 无 | 中（重建 venv + 解锁 3 个 CVE pin + 文档/Dockerfile/CI 同步） |
+| **I-006 + I-002** Playwright e2e | 跨栈 | 6h | §1177 | 无 | 中（CI fixture 起 uvicorn subprocess + docker-compose） |
+| **I-004** PWA / Service Worker | 前端 + 后端 CORS | 8h | §1183 | 无 | 中（offline-first 缓存策略 + 后端 ETag/Cache-Control） |
+| **C-005** Token 安全改造 | 跨栈大改 | 20h | §1160 | **Part 2 依赖 I-006** | 高（auth 链路重写：silent refresh + jti 黑名单 + HttpOnly Cookie + CSRF） |
+
+**推荐顺序**：
+1. **I-007**（2h）→ **I-008**（4-6h）— 低风险开胃；I-008 顺手干掉 SECURITY.md 里 3 条 Accepted CVE
+2. **I-006**（6h）— 解锁 C-005 Part 2 的回归保护
+3. **C-005 Part 1**（8h）— silent refresh + jti 黑名单（不依赖 e2e）
+4. **I-004**（8h）— PWA 独立可做
+5. **C-005 Part 2**（12h）— HttpOnly Cookie，**前置条件 I-006 已落地**
+
+**新会话第一步建议**：
+1. 读 `.claude/plan/audit-fixes.md` §1156-1300（Phase 4 5 项的 8 段方案）
+2. 与用户确认协作模式（A/B/C）
+3. 选第一个 issue（推荐 I-007）按模式执行
+4. **测试基线**：每次提交后 backend `229+` / frontend `45+`；OpenAPI 改动后跑 `bash scripts/gen-docs.sh`
+
+**重要不变量**：
+- Alembic head 当前 `0010`；C-005 Part 1 会引入 `0011`（jti 黑名单表）
+- `access_token_expire_minutes` 当前 10080（7 天）；C-005 Part 1 缩到 120 分钟（2h）+ refresh
+- `MistakeListOut` 已在 list 路径生效（M-006 落地）；详情仍用 `MistakeOut`
+- `AppEnv` enum 已在 config 强类型（L-007 落地）；新增环境变量遵循 enum 习惯
+- `taxonomy_constraints.py` / `mistake_constraints.py` 已是 schema 长度约束的集中点
+- `_MISTAKE_UUID_LOOKUP_CHUNK = 500`（L-005）作为 v3 import dedup 的 chunk size，未来如调，先看 SQLite 999 上限
 
 ### Phase 1 已交付（5 个一行修复）
 
@@ -98,14 +136,14 @@ API 文档：`http://localhost:8000/docs`
 | M-006 list schema 瘦身 | `57d5567` | MistakeListOut 砍 4 markdown；前端 MistakeListItem；payload ~80% 净降 |
 | 顺带：tz_offset flake fix | `272cf5c` | 修 H-006 落地遗留的 fixture 边界 bug |
 
-### Phase 4 双月（约 30h，未启动）
+### Phase 4 双月（详见上方"Phase 4 启动指南"）
 
 C-005 Token 安全改造 / I-006 Playwright e2e / I-004 PWA / I-007 CI 扫描 / I-008 Python 3.9→3.11。
 
 ### 新会话续做指引
 
 1. 读 `.claude/plan/audit-fixes.md` 找具体 issue 的 8 段方案（Files / Implementation / Tests / Edge cases / Dependencies / Risks / Acceptance / Effort）
-2. 按 Phase 2/3 既有协作模式：调研 → 呈报方案 → 等"做"/"可以" → 落地 → 跑测试 → 提交
+2. **Phase 4 协作模式默认 B**（讨论 → 呈方案 → 派 Codex/team），用户可在新会话第一轮重新授权 A 或 C
 3. 测试基准：每次提交前 `APP_ENV=test backend/.venv/bin/python -m pytest backend/tests/ -q` 应当 229+ passed（视新增测试而定）
 4. OpenAPI 同步：任何 backend 路由 / Pydantic schema 变更后跑 `bash scripts/gen-docs.sh` 重新生成 `docs/openapi.json`，否则 CI gate 会卡 PR
 
