@@ -39,6 +39,11 @@ from app.services.taxonomy_service import get_or_create_tags, normalize_optional
 
 EXPORTABLE_FIELDS = {"mistakes", "categories", "tags"}
 
+# Chunk size for the existing-UUID lookup in v3 import. SQLite's default
+# SQLITE_MAX_VARIABLE_NUMBER is 999; 500 leaves double headroom and keeps
+# IN-clause cardinality moderate for Postgres/MySQL planners too.
+_MISTAKE_UUID_LOOKUP_CHUNK = 500
+
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
@@ -502,20 +507,25 @@ def import_data_v3(db: Session, payload: ImportPayloadV3, strategy: str, *, user
             db.flush()
             imported["tags"] += 1
 
-        incoming_uuids = [str(record.uuid).lower() for record in valid_mistakes if record.uuid]
+        incoming_uuid_set: dict[str, None] = {}
+        for record in valid_mistakes:
+            if record.uuid:
+                incoming_uuid_set[str(record.uuid).lower()] = None
+        incoming_uuids = list(incoming_uuid_set.keys())
+
         uuid_to_id: dict[str, int] = {}
-        if incoming_uuids:
+        for start in range(0, len(incoming_uuids), _MISTAKE_UUID_LOOKUP_CHUNK):
+            chunk = incoming_uuids[start : start + _MISTAKE_UUID_LOOKUP_CHUNK]
             existing_rows = db.execute(
                 select(Mistake.uuid, Mistake.id).where(
                     Mistake.user_id == user_id,
-                    func.lower(Mistake.uuid).in_(incoming_uuids),
+                    func.lower(Mistake.uuid).in_(chunk),
                 )
             ).all()
             for row in existing_rows:
                 if not row.uuid:
                     continue
-                key = str(row.uuid).lower()
-                uuid_to_id[key] = row.id
+                uuid_to_id[str(row.uuid).lower()] = row.id
 
         for record in valid_mistakes:
             uuid_str = str(record.uuid).lower()
