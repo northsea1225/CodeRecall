@@ -1,5 +1,10 @@
-> ⚠️ 本文件为 W3 增量契约，仅供历史参考。
-> 完整当前 API 参考见 [docs/api-contract-current.md](api-contract-current.md)。
+> ⚠️ **Deprecated.** This file is preserved as a historical W3 increment reference.
+> The current canonical API contract lives at:
+> - `/docs` — Swagger UI when the backend is running
+> - [`docs/openapi.json`](openapi.json) — auto-generated, regenerate with `bash scripts/gen-docs.sh`
+>
+> Do not rely on contents below for current behavior — fields, routes, and error
+> shapes have evolved since W3.
 
 # CodeRecall API Contract W3
 

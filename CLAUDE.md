@@ -114,7 +114,7 @@ API 文档：`http://localhost:8000/docs`
 
 ### 用户认证系统 ✅（Phase A + B，2026-04-24 完成）
 - 注册 / 登录 / JWT 认证全链路
-- FastAPI：`POST /auth/token`、`POST /auth/register`（字段约束：用户名 3–100 字符 `^[A-Za-z0-9_]+$`，密码 8–72 字节，前后端双层校验）、`GET /auth/me`
+- FastAPI：`POST /api/v1/auth/token`、`POST /api/v1/auth/register`（字段约束：用户名 3–100 字符 `^[A-Za-z0-9_]+$`，密码 8–72 字节，前后端双层校验）、`GET /api/v1/auth/me`
 - JWT 签发/验证（PyJWT 2.12.1），密码哈希（passlib[bcrypt]，bcrypt==4.0.1 pinned），有效期默认 10080 分钟（7天）
 - 前端 `authStore`（Zustand）：`login()` / `logout()` / `initializeAuth()`（JWT exp 校验，防闪屏）
 - 前端 `AuthGuard`（react-router-dom 7.1.x Outlet 嵌套路由模式）
@@ -191,7 +191,7 @@ API 文档：`http://localhost:8000/docs`
 | `backend/app/main.py` | FastAPI 应用入口，CORS，路由注册，`/health` |
 | `backend/app/core/config.py` | Settings（pydantic-settings），JWT fail-fast 逻辑 |
 | `backend/app/api/deps.py` | `get_current_user` FastAPI 依赖 |
-| `backend/app/api/routes/auth.py` | POST /auth/token, POST /auth/register, GET /auth/me |
+| `backend/app/api/routes/auth.py` | POST /api/v1/auth/token, POST /api/v1/auth/register, GET /api/v1/auth/me |
 | `backend/app/models/user.py` | User ORM 模型 |
 | `backend/app/services/auth_service.py` | verify_password / hash_password / create_access_token / decode_access_token / create_user / ensure_default_old_user |
 | `backend/app/services/prompt_templates.py` | AI 提示词核心，ReviewStage 枚举，所有 _compute_* 函数 |

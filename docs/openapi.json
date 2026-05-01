@@ -1,0 +1,4515 @@
+{
+  "components": {
+    "schemas": {
+      "AuthOut": {
+        "properties": {
+          "access_token": {
+            "title": "Access Token",
+            "type": "string"
+          },
+          "token_type": {
+            "default": "bearer",
+            "title": "Token Type",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "access_token",
+          "username",
+          "user_id"
+        ],
+        "title": "AuthOut",
+        "type": "object"
+      },
+      "Body_login_route_api_v1_auth_token_post": {
+        "properties": {
+          "client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Id"
+          },
+          "client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "format": "password",
+            "title": "Client Secret"
+          },
+          "grant_type": {
+            "anyOf": [
+              {
+                "pattern": "^password$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grant Type"
+          },
+          "password": {
+            "format": "password",
+            "title": "Password",
+            "type": "string"
+          },
+          "scope": {
+            "default": "",
+            "title": "Scope",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "Body_login_route_api_v1_auth_token_post",
+        "type": "object"
+      },
+      "CategoryCreate": {
+        "properties": {
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "sort_order": {
+            "default": 0,
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "CategoryCreate",
+        "type": "object"
+      },
+      "CategoryListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "CategoryListResponse",
+        "type": "object"
+      },
+      "CategoryOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "sort_order": {
+            "default": 0,
+            "title": "Sort Order",
+            "type": "integer"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "CategoryOut",
+        "type": "object"
+      },
+      "CategoryUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "title": "CategoryUpdate",
+        "type": "object"
+      },
+      "DeleteResponse": {
+        "properties": {
+          "deleted": {
+            "default": true,
+            "title": "Deleted",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "DeleteResponse",
+        "type": "object"
+      },
+      "ExportMistakeV3": {
+        "properties": {
+          "category_name": {
+            "title": "Category Name",
+            "type": "string"
+          },
+          "correct_answer_markdown": {
+            "title": "Correct Answer Markdown",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "difficulty": {
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Difficulty",
+            "type": "integer"
+          },
+          "ease_factor": {
+            "title": "Ease Factor",
+            "type": "number"
+          },
+          "error_reason_markdown": {
+            "title": "Error Reason Markdown",
+            "type": "string"
+          },
+          "interval_days": {
+            "title": "Interval Days",
+            "type": "integer"
+          },
+          "is_archived": {
+            "title": "Is Archived",
+            "type": "boolean"
+          },
+          "language": {
+            "title": "Language",
+            "type": "string"
+          },
+          "legacy_id": {
+            "title": "Legacy Id",
+            "type": "integer"
+          },
+          "next_review_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Review At"
+          },
+          "repetition": {
+            "title": "Repetition",
+            "type": "integer"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "stem_markdown": {
+            "title": "Stem Markdown",
+            "type": "string"
+          },
+          "tag_names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tag Names",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uuid"
+          },
+          "wrong_answer_markdown": {
+            "title": "Wrong Answer Markdown",
+            "type": "string"
+          }
+        },
+        "required": [
+          "legacy_id",
+          "title",
+          "stem_markdown",
+          "wrong_answer_markdown",
+          "correct_answer_markdown",
+          "error_reason_markdown",
+          "language",
+          "difficulty",
+          "source",
+          "status",
+          "category_name",
+          "tag_names",
+          "ease_factor",
+          "interval_days",
+          "repetition",
+          "is_archived",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ExportMistakeV3",
+        "type": "object"
+      },
+      "ExportResponse": {
+        "properties": {
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/ImportCategory"
+            },
+            "title": "Categories",
+            "type": "array"
+          },
+          "exported_at": {
+            "format": "date-time",
+            "title": "Exported At",
+            "type": "string"
+          },
+          "mistakes": {
+            "items": {
+              "$ref": "#/components/schemas/ImportMistake"
+            },
+            "title": "Mistakes",
+            "type": "array"
+          },
+          "schema_version": {
+            "default": "v2",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/ImportTag"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "version": {
+            "default": "v1",
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "exported_at",
+          "categories",
+          "tags",
+          "mistakes"
+        ],
+        "title": "ExportResponse",
+        "type": "object"
+      },
+      "ExportResponseV3": {
+        "properties": {
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/ImportCategory"
+            },
+            "title": "Categories",
+            "type": "array"
+          },
+          "exported_at": {
+            "format": "date-time",
+            "title": "Exported At",
+            "type": "string"
+          },
+          "format": {
+            "default": "coderecall",
+            "title": "Format",
+            "type": "string"
+          },
+          "mistakes": {
+            "items": {
+              "$ref": "#/components/schemas/ExportMistakeV3"
+            },
+            "title": "Mistakes",
+            "type": "array"
+          },
+          "review_logs": {
+            "items": {
+              "$ref": "#/components/schemas/ExportReviewLog"
+            },
+            "title": "Review Logs",
+            "type": "array"
+          },
+          "review_session_items": {
+            "items": {
+              "$ref": "#/components/schemas/ExportReviewSessionItem"
+            },
+            "title": "Review Session Items",
+            "type": "array"
+          },
+          "review_sessions": {
+            "items": {
+              "$ref": "#/components/schemas/ExportReviewSession"
+            },
+            "title": "Review Sessions",
+            "type": "array"
+          },
+          "schema_version": {
+            "default": 3,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/ImportTag"
+            },
+            "title": "Tags",
+            "type": "array"
+          }
+        },
+        "required": [
+          "exported_at",
+          "categories",
+          "tags",
+          "mistakes",
+          "review_sessions",
+          "review_session_items",
+          "review_logs"
+        ],
+        "title": "ExportResponseV3",
+        "type": "object"
+      },
+      "ExportReviewLog": {
+        "properties": {
+          "answered_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answered At"
+          },
+          "mistake_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mistake Uuid"
+          },
+          "new_ease_factor": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Ease Factor"
+          },
+          "new_interval_days": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Interval Days"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
+          "old_ease_factor": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Old Ease Factor"
+          },
+          "old_interval_days": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Old Interval Days"
+          },
+          "review_mode": {
+            "title": "Review Mode",
+            "type": "string"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "shown_at": {
+            "format": "date-time",
+            "title": "Shown At",
+            "type": "string"
+          },
+          "time_spent_ms": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Spent Ms"
+          },
+          "user_result": {
+            "title": "User Result",
+            "type": "string"
+          }
+        },
+        "required": [
+          "review_mode",
+          "user_result",
+          "shown_at"
+        ],
+        "title": "ExportReviewLog",
+        "type": "object"
+      },
+      "ExportReviewSession": {
+        "properties": {
+          "completed_count": {
+            "minimum": 0.0,
+            "title": "Completed Count",
+            "type": "integer"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "id": {
+            "minimum": 1.0,
+            "title": "Id",
+            "type": "integer"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "strategy": {
+            "title": "Strategy",
+            "type": "string"
+          },
+          "total_count": {
+            "minimum": 0.0,
+            "title": "Total Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "started_at",
+          "strategy",
+          "total_count",
+          "completed_count"
+        ],
+        "title": "ExportReviewSession",
+        "type": "object"
+      },
+      "ExportReviewSessionItem": {
+        "properties": {
+          "mistake_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mistake Uuid"
+          },
+          "order_index": {
+            "minimum": 0.0,
+            "title": "Order Index",
+            "type": "integer"
+          },
+          "session_id": {
+            "minimum": 1.0,
+            "title": "Session Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "order_index"
+        ],
+        "title": "ExportReviewSessionItem",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "ImportCategory": {
+        "properties": {
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ImportCategory",
+        "type": "object"
+      },
+      "ImportCount": {
+        "properties": {
+          "categories": {
+            "default": 0,
+            "title": "Categories",
+            "type": "integer"
+          },
+          "mistakes": {
+            "default": 0,
+            "title": "Mistakes",
+            "type": "integer"
+          },
+          "review_logs": {
+            "default": 0,
+            "title": "Review Logs",
+            "type": "integer"
+          },
+          "review_session_items": {
+            "default": 0,
+            "title": "Review Session Items",
+            "type": "integer"
+          },
+          "review_sessions": {
+            "default": 0,
+            "title": "Review Sessions",
+            "type": "integer"
+          },
+          "tags": {
+            "default": 0,
+            "title": "Tags",
+            "type": "integer"
+          }
+        },
+        "title": "ImportCount",
+        "type": "object"
+      },
+      "ImportMistake": {
+        "properties": {
+          "category_name": {
+            "title": "Category Name",
+            "type": "string"
+          },
+          "correct_answer_markdown": {
+            "title": "Correct Answer Markdown",
+            "type": "string"
+          },
+          "difficulty": {
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Difficulty",
+            "type": "integer"
+          },
+          "ease_factor": {
+            "default": 2.5,
+            "title": "Ease Factor",
+            "type": "number"
+          },
+          "error_reason_markdown": {
+            "title": "Error Reason Markdown",
+            "type": "string"
+          },
+          "interval_days": {
+            "default": 0,
+            "title": "Interval Days",
+            "type": "integer"
+          },
+          "is_archived": {
+            "default": false,
+            "title": "Is Archived",
+            "type": "boolean"
+          },
+          "language": {
+            "title": "Language",
+            "type": "string"
+          },
+          "next_review_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Review At"
+          },
+          "repetition": {
+            "default": 0,
+            "title": "Repetition",
+            "type": "integer"
+          },
+          "source": {
+            "default": "",
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "default": "new",
+            "title": "Status",
+            "type": "string"
+          },
+          "stem_markdown": {
+            "title": "Stem Markdown",
+            "type": "string"
+          },
+          "tag_names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tag Names",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "wrong_answer_markdown": {
+            "title": "Wrong Answer Markdown",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "stem_markdown",
+          "wrong_answer_markdown",
+          "correct_answer_markdown",
+          "error_reason_markdown",
+          "language",
+          "difficulty",
+          "category_name"
+        ],
+        "title": "ImportMistake",
+        "type": "object"
+      },
+      "ImportPayload": {
+        "properties": {
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/ImportCategory"
+            },
+            "title": "Categories",
+            "type": "array"
+          },
+          "mistakes": {
+            "items": {
+              "$ref": "#/components/schemas/ImportMistake"
+            },
+            "title": "Mistakes",
+            "type": "array"
+          },
+          "schema_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schema Version"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/ImportTag"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "version": {
+            "default": "v1",
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "title": "ImportPayload",
+        "type": "object"
+      },
+      "ImportPayloadV3": {
+        "properties": {
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/ImportCategory"
+            },
+            "maxItems": 1000,
+            "title": "Categories",
+            "type": "array"
+          },
+          "exported_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exported At"
+          },
+          "format": {
+            "default": "coderecall",
+            "title": "Format",
+            "type": "string"
+          },
+          "mistakes": {
+            "items": {
+              "$ref": "#/components/schemas/ExportMistakeV3"
+            },
+            "maxItems": 10000,
+            "title": "Mistakes",
+            "type": "array"
+          },
+          "review_logs": {
+            "items": {
+              "$ref": "#/components/schemas/ExportReviewLog"
+            },
+            "maxItems": 200000,
+            "title": "Review Logs",
+            "type": "array"
+          },
+          "review_session_items": {
+            "items": {
+              "$ref": "#/components/schemas/ExportReviewSessionItem"
+            },
+            "maxItems": 100000,
+            "title": "Review Session Items",
+            "type": "array"
+          },
+          "review_sessions": {
+            "items": {
+              "$ref": "#/components/schemas/ExportReviewSession"
+            },
+            "maxItems": 10000,
+            "title": "Review Sessions",
+            "type": "array"
+          },
+          "schema_version": {
+            "default": 3,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/ImportTag"
+            },
+            "maxItems": 10000,
+            "title": "Tags",
+            "type": "array"
+          }
+        },
+        "title": "ImportPayloadV3",
+        "type": "object"
+      },
+      "ImportResponse": {
+        "properties": {
+          "imported": {
+            "$ref": "#/components/schemas/ImportCount"
+          },
+          "skipped": {
+            "items": {
+              "$ref": "#/components/schemas/ImportSkip"
+            },
+            "title": "Skipped",
+            "type": "array"
+          },
+          "version": {
+            "default": "v1",
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "imported"
+        ],
+        "title": "ImportResponse",
+        "type": "object"
+      },
+      "ImportSkip": {
+        "properties": {
+          "entity": {
+            "title": "Entity",
+            "type": "string"
+          },
+          "identifier": {
+            "title": "Identifier",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entity",
+          "identifier",
+          "reason"
+        ],
+        "title": "ImportSkip",
+        "type": "object"
+      },
+      "ImportTag": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ImportTag",
+        "type": "object"
+      },
+      "MistakeCreate": {
+        "properties": {
+          "category_id": {
+            "title": "Category Id",
+            "type": "integer"
+          },
+          "correct_answer_markdown": {
+            "maxLength": 50000,
+            "title": "Correct Answer Markdown",
+            "type": "string"
+          },
+          "difficulty": {
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Difficulty",
+            "type": "integer"
+          },
+          "error_reason_markdown": {
+            "maxLength": 10000,
+            "title": "Error Reason Markdown",
+            "type": "string"
+          },
+          "is_archived": {
+            "default": false,
+            "title": "Is Archived",
+            "type": "boolean"
+          },
+          "language": {
+            "maxLength": 50,
+            "title": "Language",
+            "type": "string"
+          },
+          "source": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MistakeStatus",
+            "default": "new",
+            "description": "受 review 流控制；PATCH 请求会忽略该字段。"
+          },
+          "stem_markdown": {
+            "maxLength": 50000,
+            "title": "Stem Markdown",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 500,
+            "title": "Title",
+            "type": "string"
+          },
+          "wrong_answer_markdown": {
+            "maxLength": 50000,
+            "title": "Wrong Answer Markdown",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "stem_markdown",
+          "wrong_answer_markdown",
+          "correct_answer_markdown",
+          "error_reason_markdown",
+          "language",
+          "difficulty",
+          "category_id"
+        ],
+        "title": "MistakeCreate",
+        "type": "object"
+      },
+      "MistakeListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MistakeOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMeta"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "pagination"
+        ],
+        "title": "MistakeListResponse",
+        "type": "object"
+      },
+      "MistakeOut": {
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/CategoryOut"
+          },
+          "correct_answer_markdown": {
+            "maxLength": 50000,
+            "title": "Correct Answer Markdown",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "difficulty": {
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Difficulty",
+            "type": "integer"
+          },
+          "ease_factor": {
+            "title": "Ease Factor",
+            "type": "number"
+          },
+          "error_reason_markdown": {
+            "maxLength": 10000,
+            "title": "Error Reason Markdown",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "interval_days": {
+            "title": "Interval Days",
+            "type": "integer"
+          },
+          "is_archived": {
+            "title": "Is Archived",
+            "type": "boolean"
+          },
+          "language": {
+            "maxLength": 50,
+            "title": "Language",
+            "type": "string"
+          },
+          "last_reviewed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Reviewed At"
+          },
+          "next_review_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Review At"
+          },
+          "repetition": {
+            "title": "Repetition",
+            "type": "integer"
+          },
+          "review_count": {
+            "title": "Review Count",
+            "type": "integer"
+          },
+          "source": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MistakeStatus",
+            "default": "new",
+            "description": "受 review 流控制；PATCH 请求会忽略该字段。"
+          },
+          "stem_markdown": {
+            "maxLength": 50000,
+            "title": "Stem Markdown",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/TagOut"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 500,
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "wrong_answer_markdown": {
+            "maxLength": 50000,
+            "title": "Wrong Answer Markdown",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "stem_markdown",
+          "wrong_answer_markdown",
+          "correct_answer_markdown",
+          "error_reason_markdown",
+          "language",
+          "difficulty",
+          "is_archived",
+          "id",
+          "category",
+          "tags",
+          "review_count",
+          "last_reviewed_at",
+          "next_review_at",
+          "ease_factor",
+          "interval_days",
+          "repetition",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "MistakeOut",
+        "type": "object"
+      },
+      "MistakeStatus": {
+        "enum": [
+          "new",
+          "learning",
+          "reviewing",
+          "mastered"
+        ],
+        "title": "MistakeStatus",
+        "type": "string"
+      },
+      "MistakeUpdate": {
+        "properties": {
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "correct_answer_markdown": {
+            "anyOf": [
+              {
+                "maxLength": 50000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correct Answer Markdown"
+          },
+          "difficulty": {
+            "anyOf": [
+              {
+                "maximum": 5.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difficulty"
+          },
+          "error_reason_markdown": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Reason Markdown"
+          },
+          "is_archived": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Archived"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "maxLength": 50,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "stem_markdown": {
+            "anyOf": [
+              {
+                "maxLength": 50000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stem Markdown"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "wrong_answer_markdown": {
+            "anyOf": [
+              {
+                "maxLength": 50000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wrong Answer Markdown"
+          }
+        },
+        "title": "MistakeUpdate",
+        "type": "object"
+      },
+      "PaginationMeta": {
+        "properties": {
+          "page": {
+            "default": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "default": 20,
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total"
+        ],
+        "title": "PaginationMeta",
+        "type": "object"
+      },
+      "ProblemUrlPreviewRequest": {
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "ProblemUrlPreviewRequest",
+        "type": "object"
+      },
+      "ProblemUrlPreviewResponse": {
+        "properties": {
+          "difficulty": {
+            "title": "Difficulty",
+            "type": "integer"
+          },
+          "difficulty_raw": {
+            "title": "Difficulty Raw",
+            "type": "string"
+          },
+          "external_id": {
+            "title": "External Id",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "source_url": {
+            "title": "Source Url",
+            "type": "string"
+          },
+          "stem_markdown": {
+            "title": "Stem Markdown",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "warnings": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "provider",
+          "source_url",
+          "external_id",
+          "title",
+          "difficulty_raw",
+          "difficulty",
+          "tags",
+          "stem_markdown"
+        ],
+        "title": "ProblemUrlPreviewResponse",
+        "type": "object"
+      },
+      "RegisterIn": {
+        "properties": {
+          "password": {
+            "maxLength": 72,
+            "minLength": 8,
+            "title": "Password",
+            "type": "string"
+          },
+          "username": {
+            "maxLength": 100,
+            "minLength": 3,
+            "pattern": "^[A-Za-z0-9_]+$",
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "RegisterIn",
+        "type": "object"
+      },
+      "ReviewCapabilityOut": {
+        "properties": {
+          "ai_analysis_enabled": {
+            "title": "Ai Analysis Enabled",
+            "type": "boolean"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          }
+        },
+        "required": [
+          "ai_analysis_enabled"
+        ],
+        "title": "ReviewCapabilityOut",
+        "type": "object"
+      },
+      "ReviewDueCountOut": {
+        "properties": {
+          "as_of": {
+            "format": "date-time",
+            "title": "As Of",
+            "type": "string"
+          },
+          "due_count": {
+            "title": "Due Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "due_count",
+          "as_of"
+        ],
+        "title": "ReviewDueCountOut",
+        "type": "object"
+      },
+      "ReviewItemOut": {
+        "properties": {
+          "category_name": {
+            "title": "Category Name",
+            "type": "string"
+          },
+          "difficulty": {
+            "title": "Difficulty",
+            "type": "integer"
+          },
+          "language": {
+            "title": "Language",
+            "type": "string"
+          },
+          "mistake_id": {
+            "title": "Mistake Id",
+            "type": "integer"
+          },
+          "shown_at": {
+            "format": "date-time",
+            "title": "Shown At",
+            "type": "string"
+          },
+          "stem_markdown": {
+            "title": "Stem Markdown",
+            "type": "string"
+          },
+          "tag_names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tag Names",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mistake_id",
+          "title",
+          "stem_markdown",
+          "language",
+          "difficulty",
+          "category_name",
+          "tag_names",
+          "shown_at"
+        ],
+        "title": "ReviewItemOut",
+        "type": "object"
+      },
+      "ReviewNextOut": {
+        "properties": {
+          "next_item": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReviewItemOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "progress": {
+            "$ref": "#/components/schemas/ReviewProgressOut"
+          }
+        },
+        "required": [
+          "progress"
+        ],
+        "title": "ReviewNextOut",
+        "type": "object"
+      },
+      "ReviewProgressOut": {
+        "properties": {
+          "completed": {
+            "title": "Completed",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "completed",
+          "total"
+        ],
+        "title": "ReviewProgressOut",
+        "type": "object"
+      },
+      "ReviewResult": {
+        "enum": [
+          "again",
+          "hard",
+          "good",
+          "easy"
+        ],
+        "title": "ReviewResult",
+        "type": "string"
+      },
+      "ReviewResultCountsOut": {
+        "properties": {
+          "again": {
+            "default": 0,
+            "title": "Again",
+            "type": "integer"
+          },
+          "easy": {
+            "default": 0,
+            "title": "Easy",
+            "type": "integer"
+          },
+          "good": {
+            "default": 0,
+            "title": "Good",
+            "type": "integer"
+          },
+          "hard": {
+            "default": 0,
+            "title": "Hard",
+            "type": "integer"
+          }
+        },
+        "title": "ReviewResultCountsOut",
+        "type": "object"
+      },
+      "ReviewRevealOut": {
+        "properties": {
+          "category_name": {
+            "title": "Category Name",
+            "type": "string"
+          },
+          "correct_answer_markdown": {
+            "title": "Correct Answer Markdown",
+            "type": "string"
+          },
+          "difficulty": {
+            "title": "Difficulty",
+            "type": "integer"
+          },
+          "error_reason_markdown": {
+            "title": "Error Reason Markdown",
+            "type": "string"
+          },
+          "language": {
+            "title": "Language",
+            "type": "string"
+          },
+          "mistake_id": {
+            "title": "Mistake Id",
+            "type": "integer"
+          },
+          "stem_markdown": {
+            "title": "Stem Markdown",
+            "type": "string"
+          },
+          "tag_names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tag Names",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "wrong_answer_markdown": {
+            "title": "Wrong Answer Markdown",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mistake_id",
+          "title",
+          "stem_markdown",
+          "wrong_answer_markdown",
+          "correct_answer_markdown",
+          "error_reason_markdown",
+          "language",
+          "difficulty",
+          "category_name",
+          "tag_names"
+        ],
+        "title": "ReviewRevealOut",
+        "type": "object"
+      },
+      "ReviewSessionOut": {
+        "properties": {
+          "completed_count": {
+            "title": "Completed Count",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "next_item": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReviewItemOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "strategy": {
+            "enum": [
+              "random",
+              "spaced_repetition",
+              "due_first"
+            ],
+            "title": "Strategy",
+            "type": "string"
+          },
+          "total_count": {
+            "title": "Total Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "strategy",
+          "started_at",
+          "total_count",
+          "completed_count"
+        ],
+        "title": "ReviewSessionOut",
+        "type": "object"
+      },
+      "ReviewSessionStartIn": {
+        "properties": {
+          "limit": {
+            "default": 10,
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "strategy": {
+            "default": "random",
+            "enum": [
+              "random",
+              "spaced_repetition",
+              "due_first"
+            ],
+            "title": "Strategy",
+            "type": "string"
+          }
+        },
+        "title": "ReviewSessionStartIn",
+        "type": "object"
+      },
+      "ReviewSubmitIn": {
+        "properties": {
+          "mistake_id": {
+            "title": "Mistake Id",
+            "type": "integer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "shown_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shown At"
+          },
+          "time_spent_ms": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Spent Ms"
+          },
+          "user_result": {
+            "$ref": "#/components/schemas/ReviewResult"
+          }
+        },
+        "required": [
+          "mistake_id",
+          "user_result"
+        ],
+        "title": "ReviewSubmitIn",
+        "type": "object"
+      },
+      "ReviewSubmitOut": {
+        "properties": {
+          "answered_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answered At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "mistake_id": {
+            "title": "Mistake Id",
+            "type": "integer"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/ReviewProgressOut"
+          },
+          "review_mode": {
+            "title": "Review Mode",
+            "type": "string"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "shown_at": {
+            "format": "date-time",
+            "title": "Shown At",
+            "type": "string"
+          },
+          "time_spent_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Spent Ms"
+          },
+          "user_result": {
+            "$ref": "#/components/schemas/ReviewResult"
+          }
+        },
+        "required": [
+          "id",
+          "mistake_id",
+          "session_id",
+          "review_mode",
+          "user_result",
+          "shown_at",
+          "answered_at",
+          "time_spent_ms",
+          "note",
+          "progress"
+        ],
+        "title": "ReviewSubmitOut",
+        "type": "object"
+      },
+      "ReviewSummaryOut": {
+        "properties": {
+          "completed_count": {
+            "title": "Completed Count",
+            "type": "integer"
+          },
+          "duration_ms": {
+            "title": "Duration Ms",
+            "type": "integer"
+          },
+          "result_counts": {
+            "$ref": "#/components/schemas/ReviewResultCountsOut"
+          },
+          "total_count": {
+            "title": "Total Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total_count",
+          "completed_count",
+          "result_counts",
+          "duration_ms"
+        ],
+        "title": "ReviewSummaryOut",
+        "type": "object"
+      },
+      "StatsHeatmapCellOut": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "level": {
+            "maximum": 4.0,
+            "minimum": 0.0,
+            "title": "Level",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "date",
+          "count",
+          "level"
+        ],
+        "title": "StatsHeatmapCellOut",
+        "type": "object"
+      },
+      "StatsHeatmapOut": {
+        "properties": {
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/StatsHeatmapCellOut"
+            },
+            "title": "Cells",
+            "type": "array"
+          },
+          "max_count": {
+            "title": "Max Count",
+            "type": "integer"
+          },
+          "range": {
+            "$ref": "#/components/schemas/StatsHeatmapRangeOut"
+          }
+        },
+        "required": [
+          "range",
+          "max_count",
+          "cells"
+        ],
+        "title": "StatsHeatmapOut",
+        "type": "object"
+      },
+      "StatsHeatmapRangeOut": {
+        "properties": {
+          "from": {
+            "format": "date",
+            "title": "From",
+            "type": "string"
+          },
+          "to": {
+            "format": "date",
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "title": "StatsHeatmapRangeOut",
+        "type": "object"
+      },
+      "StatsOverviewOut": {
+        "properties": {
+          "active_mistakes": {
+            "title": "Active Mistakes",
+            "type": "integer"
+          },
+          "as_of": {
+            "format": "date-time",
+            "title": "As Of",
+            "type": "string"
+          },
+          "avg_accuracy_7d": {
+            "title": "Avg Accuracy 7D",
+            "type": "number"
+          },
+          "avg_ease_factor": {
+            "title": "Avg Ease Factor",
+            "type": "number"
+          },
+          "due_today": {
+            "title": "Due Today",
+            "type": "integer"
+          },
+          "mastered_count": {
+            "title": "Mastered Count",
+            "type": "integer"
+          },
+          "reviewed_7d": {
+            "title": "Reviewed 7D",
+            "type": "integer"
+          },
+          "reviewed_today": {
+            "title": "Reviewed Today",
+            "type": "integer"
+          },
+          "streak_days": {
+            "title": "Streak Days",
+            "type": "integer"
+          },
+          "total_mistakes": {
+            "title": "Total Mistakes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "as_of",
+          "total_mistakes",
+          "active_mistakes",
+          "mastered_count",
+          "due_today",
+          "reviewed_today",
+          "reviewed_7d",
+          "avg_accuracy_7d",
+          "avg_ease_factor",
+          "streak_days"
+        ],
+        "title": "StatsOverviewOut",
+        "type": "object"
+      },
+      "StatsTagRadarItemOut": {
+        "properties": {
+          "avg_ease_factor": {
+            "title": "Avg Ease Factor",
+            "type": "number"
+          },
+          "mastery_rate": {
+            "title": "Mastery Rate",
+            "type": "number"
+          },
+          "mistake_count": {
+            "title": "Mistake Count",
+            "type": "integer"
+          },
+          "tag_name": {
+            "title": "Tag Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tag_name",
+          "mistake_count",
+          "mastery_rate",
+          "avg_ease_factor"
+        ],
+        "title": "StatsTagRadarItemOut",
+        "type": "object"
+      },
+      "StatsTagRadarOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StatsTagRadarItemOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "min_count_threshold": {
+            "title": "Min Count Threshold",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "min_count_threshold"
+        ],
+        "title": "StatsTagRadarOut",
+        "type": "object"
+      },
+      "StatsTopWeakItemOut": {
+        "properties": {
+          "again_count": {
+            "title": "Again Count",
+            "type": "integer"
+          },
+          "category_name": {
+            "title": "Category Name",
+            "type": "string"
+          },
+          "hard_count": {
+            "title": "Hard Count",
+            "type": "integer"
+          },
+          "language": {
+            "title": "Language",
+            "type": "string"
+          },
+          "last_result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReviewResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mistake_id": {
+            "title": "Mistake Id",
+            "type": "integer"
+          },
+          "next_review_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Review At"
+          },
+          "overdue_days": {
+            "title": "Overdue Days",
+            "type": "integer"
+          },
+          "review_count": {
+            "title": "Review Count",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MistakeStatus"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "weak_score": {
+            "title": "Weak Score",
+            "type": "number"
+          }
+        },
+        "required": [
+          "mistake_id",
+          "title",
+          "language",
+          "category_name",
+          "status",
+          "review_count",
+          "again_count",
+          "hard_count",
+          "overdue_days",
+          "weak_score"
+        ],
+        "title": "StatsTopWeakItemOut",
+        "type": "object"
+      },
+      "StatsTopWeakOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StatsTopWeakItemOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "StatsTopWeakOut",
+        "type": "object"
+      },
+      "StatsTrendItemOut": {
+        "properties": {
+          "again_count": {
+            "title": "Again Count",
+            "type": "integer"
+          },
+          "created_count": {
+            "title": "Created Count",
+            "type": "integer"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "easy_count": {
+            "title": "Easy Count",
+            "type": "integer"
+          },
+          "good_count": {
+            "title": "Good Count",
+            "type": "integer"
+          },
+          "hard_count": {
+            "title": "Hard Count",
+            "type": "integer"
+          },
+          "review_count": {
+            "title": "Review Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "date",
+          "created_count",
+          "review_count",
+          "again_count",
+          "hard_count",
+          "good_count",
+          "easy_count"
+        ],
+        "title": "StatsTrendItemOut",
+        "type": "object"
+      },
+      "StatsTrendOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StatsTrendItemOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "range": {
+            "$ref": "#/components/schemas/StatsTrendRangeOut"
+          }
+        },
+        "required": [
+          "range",
+          "items"
+        ],
+        "title": "StatsTrendOut",
+        "type": "object"
+      },
+      "StatsTrendRangeOut": {
+        "properties": {
+          "bucket": {
+            "const": "day",
+            "title": "Bucket",
+            "type": "string"
+          },
+          "from": {
+            "format": "date",
+            "title": "From",
+            "type": "string"
+          },
+          "to": {
+            "format": "date",
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "bucket"
+        ],
+        "title": "StatsTrendRangeOut",
+        "type": "object"
+      },
+      "TagCreate": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "TagCreate",
+        "type": "object"
+      },
+      "TagListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TagOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "TagListResponse",
+        "type": "object"
+      },
+      "TagOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "TagOut",
+        "type": "object"
+      },
+      "TagUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "title": "TagUpdate",
+        "type": "object"
+      },
+      "UserOut": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "display_name",
+          "is_active"
+        ],
+        "title": "UserOut",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "VariantOut": {
+        "properties": {
+          "variant_hint": {
+            "title": "Variant Hint",
+            "type": "string"
+          },
+          "variant_stem": {
+            "title": "Variant Stem",
+            "type": "string"
+          },
+          "variant_title": {
+            "title": "Variant Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "variant_title",
+          "variant_stem",
+          "variant_hint"
+        ],
+        "title": "VariantOut",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "OAuth2PasswordBearer": {
+        "flows": {
+          "password": {
+            "scopes": {},
+            "tokenUrl": "/api/v1/auth/token"
+          }
+        },
+        "type": "oauth2"
+      }
+    }
+  },
+  "info": {
+    "title": "CodeRecall API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/ai/analyze/stream": {
+      "get": {
+        "operationId": "analyze_stream_route_api_v1_ai_analyze_stream_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "mistake_id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "title": "Mistake Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "model",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Model"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Analyze Stream Route",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v1/ai/generate-variant/{mistake_id}": {
+      "post": {
+        "operationId": "generate_variant_route_api_v1_ai_generate_variant__mistake_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "mistake_id",
+            "required": true,
+            "schema": {
+              "title": "Mistake Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "model",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Model"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VariantOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Generate Variant Route",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "operationId": "me_route_api_v1_auth_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Me Route",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "operationId": "register_route_api_v1_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register Route",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/token": {
+      "post": {
+        "operationId": "login_route_api_v1_auth_token_post",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_login_route_api_v1_auth_token_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Login Route",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/categories": {
+      "get": {
+        "description": "List all categories.",
+        "operationId": "list_categories_route_api_v1_categories_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Categories Route",
+        "tags": [
+          "categories"
+        ]
+      },
+      "post": {
+        "description": "Create a category.",
+        "operationId": "create_category_route_api_v1_categories_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Category Route",
+        "tags": [
+          "categories"
+        ]
+      }
+    },
+    "/api/v1/categories/{category_id}": {
+      "delete": {
+        "description": "Delete a category.",
+        "operationId": "delete_category_route_api_v1_categories__category_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "title": "Category Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Delete Category Route",
+        "tags": [
+          "categories"
+        ]
+      },
+      "get": {
+        "description": "Fetch a category by id.",
+        "operationId": "get_category_route_api_v1_categories__category_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "title": "Category Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Category Route",
+        "tags": [
+          "categories"
+        ]
+      },
+      "patch": {
+        "description": "Partially update a category.",
+        "operationId": "update_category_route_api_v1_categories__category_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "title": "Category Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Update Category Route",
+        "tags": [
+          "categories"
+        ]
+      }
+    },
+    "/api/v1/export": {
+      "get": {
+        "description": "Export selected resources as JSON.",
+        "operationId": "export_route_api_v1_export_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "include",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Include"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Export Route",
+        "tags": [
+          "import-export"
+        ]
+      }
+    },
+    "/api/v1/export/v3": {
+      "get": {
+        "operationId": "export_v3_route_api_v1_export_v3_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportResponseV3"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Export V3 Route",
+        "tags": [
+          "import-export"
+        ]
+      }
+    },
+    "/api/v1/import": {
+      "post": {
+        "description": "Import categories, tags, and mistakes from JSON.",
+        "operationId": "import_route_api_v1_import_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "strategy",
+            "required": false,
+            "schema": {
+              "default": "skip_existing",
+              "title": "Strategy",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Import Route",
+        "tags": [
+          "import-export"
+        ]
+      }
+    },
+    "/api/v1/import/problem-url/preview": {
+      "post": {
+        "operationId": "preview_problem_url_route_api_v1_import_problem_url_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProblemUrlPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemUrlPreviewResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Preview Problem Url Route",
+        "tags": [
+          "problem-import"
+        ]
+      }
+    },
+    "/api/v1/import/v3": {
+      "post": {
+        "description": "Import a schema v3 full backup, including review history.",
+        "operationId": "import_v3_route_api_v1_import_v3_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "strategy",
+            "required": false,
+            "schema": {
+              "default": "skip_existing",
+              "title": "Strategy",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportPayloadV3"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Import V3 Route",
+        "tags": [
+          "import-export"
+        ]
+      }
+    },
+    "/api/v1/mistakes": {
+      "get": {
+        "description": "List mistakes with pagination and filters.",
+        "operationId": "list_mistakes_route_api_v1_mistakes_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "language",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Language"
+            }
+          },
+          {
+            "in": "query",
+            "name": "keyword",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Keyword"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MistakeListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Mistakes Route",
+        "tags": [
+          "mistakes"
+        ]
+      },
+      "post": {
+        "description": "Create a mistake record.",
+        "operationId": "create_mistake_route_api_v1_mistakes_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MistakeCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MistakeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Mistake Route",
+        "tags": [
+          "mistakes"
+        ]
+      }
+    },
+    "/api/v1/mistakes/export": {
+      "get": {
+        "description": "Export mistakes as a v2 round-trip list.",
+        "operationId": "export_mistakes_route_api_v1_mistakes_export_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Export Mistakes Route",
+        "tags": [
+          "import-export"
+        ]
+      }
+    },
+    "/api/v1/mistakes/import": {
+      "post": {
+        "description": "Import mistakes from the v2 round-trip list shape.",
+        "operationId": "import_mistakes_route_api_v1_mistakes_import_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "strategy",
+            "required": false,
+            "schema": {
+              "default": "skip_existing",
+              "title": "Strategy",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Import Mistakes Route",
+        "tags": [
+          "import-export"
+        ]
+      }
+    },
+    "/api/v1/mistakes/{mistake_id}": {
+      "delete": {
+        "description": "Delete a mistake by id.",
+        "operationId": "delete_mistake_route_api_v1_mistakes__mistake_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "mistake_id",
+            "required": true,
+            "schema": {
+              "title": "Mistake Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Delete Mistake Route",
+        "tags": [
+          "mistakes"
+        ]
+      },
+      "get": {
+        "description": "Fetch a mistake by id.",
+        "operationId": "get_mistake_route_api_v1_mistakes__mistake_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "mistake_id",
+            "required": true,
+            "schema": {
+              "title": "Mistake Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MistakeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Mistake Route",
+        "tags": [
+          "mistakes"
+        ]
+      },
+      "patch": {
+        "description": "Partially update a mistake.",
+        "operationId": "update_mistake_route_api_v1_mistakes__mistake_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "mistake_id",
+            "required": true,
+            "schema": {
+              "title": "Mistake Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MistakeUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MistakeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Update Mistake Route",
+        "tags": [
+          "mistakes"
+        ]
+      }
+    },
+    "/api/v1/review/capability": {
+      "get": {
+        "operationId": "get_review_capability_route_api_v1_review_capability_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewCapabilityOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Review Capability Route",
+        "tags": [
+          "review"
+        ]
+      }
+    },
+    "/api/v1/review/due-count": {
+      "get": {
+        "operationId": "get_review_due_count_route_api_v1_review_due_count_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewDueCountOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Review Due Count Route",
+        "tags": [
+          "review"
+        ]
+      }
+    },
+    "/api/v1/review/items/{mistake_id}/reveal": {
+      "get": {
+        "operationId": "get_review_reveal_route_api_v1_review_items__mistake_id__reveal_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "mistake_id",
+            "required": true,
+            "schema": {
+              "title": "Mistake Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewRevealOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Review Reveal Route",
+        "tags": [
+          "review"
+        ]
+      }
+    },
+    "/api/v1/review/sessions": {
+      "post": {
+        "operationId": "start_review_session_route_api_v1_review_sessions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ReviewSessionStartIn"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewSessionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Start Review Session Route",
+        "tags": [
+          "review"
+        ]
+      }
+    },
+    "/api/v1/review/sessions/{session_id}/next": {
+      "get": {
+        "operationId": "get_next_review_item_route_api_v1_review_sessions__session_id__next_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewNextOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Next Review Item Route",
+        "tags": [
+          "review"
+        ]
+      }
+    },
+    "/api/v1/review/sessions/{session_id}/submit": {
+      "post": {
+        "operationId": "submit_review_result_route_api_v1_review_sessions__session_id__submit_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewSubmitIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewSubmitOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Submit Review Result Route",
+        "tags": [
+          "review"
+        ]
+      }
+    },
+    "/api/v1/review/sessions/{session_id}/summary": {
+      "get": {
+        "operationId": "get_review_summary_route_api_v1_review_sessions__session_id__summary_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewSummaryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Review Summary Route",
+        "tags": [
+          "review"
+        ]
+      }
+    },
+    "/api/v1/stats/heatmap": {
+      "get": {
+        "operationId": "get_stats_heatmap_route_api_v1_stats_heatmap_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 90,
+              "maximum": 364,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tz_offset_minutes",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 840,
+              "minimum": -840,
+              "title": "Tz Offset Minutes",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsHeatmapOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Stats Heatmap Route",
+        "tags": [
+          "stats"
+        ]
+      }
+    },
+    "/api/v1/stats/overview": {
+      "get": {
+        "operationId": "get_stats_overview_route_api_v1_stats_overview_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tz_offset_minutes",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 840,
+              "minimum": -840,
+              "title": "Tz Offset Minutes",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsOverviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Stats Overview Route",
+        "tags": [
+          "stats"
+        ]
+      }
+    },
+    "/api/v1/stats/tag-radar": {
+      "get": {
+        "operationId": "get_stats_tag_radar_route_api_v1_stats_tag_radar_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "min_count",
+            "required": false,
+            "schema": {
+              "default": 2,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Min Count",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsTagRadarOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Stats Tag Radar Route",
+        "tags": [
+          "stats"
+        ]
+      }
+    },
+    "/api/v1/stats/top-weak": {
+      "get": {
+        "operationId": "get_stats_top_weak_route_api_v1_stats_top_weak_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 5,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 365,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsTopWeakOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Stats Top Weak Route",
+        "tags": [
+          "stats"
+        ]
+      }
+    },
+    "/api/v1/stats/trend": {
+      "get": {
+        "operationId": "get_stats_trend_route_api_v1_stats_trend_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 365,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "bucket",
+            "required": false,
+            "schema": {
+              "const": "day",
+              "default": "day",
+              "title": "Bucket",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tz_offset_minutes",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 840,
+              "minimum": -840,
+              "title": "Tz Offset Minutes",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsTrendOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Stats Trend Route",
+        "tags": [
+          "stats"
+        ]
+      }
+    },
+    "/api/v1/tags": {
+      "get": {
+        "description": "List all tags.",
+        "operationId": "list_tags_route_api_v1_tags_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Tags Route",
+        "tags": [
+          "tags"
+        ]
+      },
+      "post": {
+        "description": "Create a tag.",
+        "operationId": "create_tag_route_api_v1_tags_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Tag Route",
+        "tags": [
+          "tags"
+        ]
+      }
+    },
+    "/api/v1/tags/{tag_id}": {
+      "delete": {
+        "description": "Delete a tag.",
+        "operationId": "delete_tag_route_api_v1_tags__tag_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tag_id",
+            "required": true,
+            "schema": {
+              "title": "Tag Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Delete Tag Route",
+        "tags": [
+          "tags"
+        ]
+      },
+      "get": {
+        "description": "Fetch a tag by id.",
+        "operationId": "get_tag_route_api_v1_tags__tag_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tag_id",
+            "required": true,
+            "schema": {
+              "title": "Tag Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Tag Route",
+        "tags": [
+          "tags"
+        ]
+      },
+      "patch": {
+        "description": "Partially update a tag.",
+        "operationId": "update_tag_route_api_v1_tags__tag_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tag_id",
+            "required": true,
+            "schema": {
+              "title": "Tag Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Update Tag Route",
+        "tags": [
+          "tags"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Health Check Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health Check",
+        "tags": [
+          "system"
+        ]
+      }
+    }
+  }
+}

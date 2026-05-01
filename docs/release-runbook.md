@@ -79,7 +79,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 Serve `frontend/dist` as static files. Configure your reverse proxy to:
 - Serve `frontend/dist` for all non-API paths (SPA fallback to `index.html`)
-- Proxy `/api/v1/*` and `/auth/*` to backend port 8000
+- Proxy `/api/v1/*` to backend port 8000 (auth routes live under `/api/v1/auth/*`, no separate prefix)
 - **Disable proxy buffering for SSE** (`proxy_buffering off` in nginx; long connection timeout ≥ 120s)
 
 ## Database Migration on Startup
@@ -135,7 +135,7 @@ Frontend:
 ## Verification Commands
 
 ```bash
-# Backend tests (expected: 184 passed)
+# Backend tests (expected: 197 passed)
 cd backend && .venv/bin/python -m pytest --tb=short -q
 
 # Frontend tests (expected: 40 passed)
@@ -146,6 +146,9 @@ cd frontend && npx tsc --noEmit
 
 # Frontend build
 cd frontend && npm run build
+
+# OpenAPI contract is up to date (CI mirrors this check)
+bash scripts/gen-docs.sh && git diff --exit-code docs/openapi.json
 
 # Security smoke test — unauthenticated request must return 401
 curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/api/v1/mistakes

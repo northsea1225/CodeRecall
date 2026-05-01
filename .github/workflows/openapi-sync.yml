@@ -1,0 +1,40 @@
+name: OpenAPI sync
+
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'docs/openapi.json'
+      - 'scripts/gen-docs.sh'
+      - '.github/workflows/openapi-sync.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'docs/openapi.json'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          python -m venv .venv
+          .venv/bin/pip install -r requirements.txt
+
+      - name: Regenerate openapi.json
+        run: bash scripts/gen-docs.sh
+
+      - name: Verify openapi.json is up to date
+        run: |
+          if ! git diff --exit-code docs/openapi.json; then
+            echo "::error::docs/openapi.json is stale. Run 'bash scripts/gen-docs.sh' locally and commit the result."
+            exit 1
+          fi
