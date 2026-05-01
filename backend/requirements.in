@@ -1,6 +1,10 @@
 fastapi~=0.115
 uvicorn[standard]~=0.32
 sqlalchemy~=2.0
+# greenlet is a runtime dep of sqlalchemy on Linux (manylinux wheel pulls it as `>=1`),
+# but is platform-conditional on macOS arm64 — so pip-compile on macOS won't lock it.
+# Pin it explicitly so `pip install --require-hashes` succeeds on CI runners (Linux).
+greenlet~=3.0
 alembic~=1.13
 pydantic~=2.9
 pydantic-settings~=2.6

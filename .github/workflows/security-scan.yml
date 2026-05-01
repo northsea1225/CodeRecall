@@ -44,15 +44,12 @@ jobs:
         run: pip install 'pip-audit~=2.7'
 
       # Ignore list mirrors the "Accepted CVEs" table in SECURITY.md.
-      # Each ID is justified there; revisit when Python is upgraded to 3.11
-      # (see audit-fixes I-008) — most can be dropped at that point.
+      # Only pytest GHSA-6w46-j5rx-g56g remains after I-008 (Python 3.11 upgrade)
+      # unblocked python-multipart 0.0.27 + python-dotenv 1.2.2.
       - name: Audit pinned requirements
         run: |
           pip-audit \
             --requirement backend/requirements.txt \
-            --ignore-vuln GHSA-wp53-j4wj-2cfg \
-            --ignore-vuln GHSA-mj87-hwqh-73pj \
-            --ignore-vuln GHSA-mf9w-mj56-hr94 \
             --ignore-vuln GHSA-6w46-j5rx-g56g
 
   npm-audit:
