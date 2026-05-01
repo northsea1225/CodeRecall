@@ -47,24 +47,25 @@ API 文档：`http://localhost:8000/docs`
 
 ## 当前焦点
 
-**Audit-fixes Phase 4 进行中（3/5 完成 · 剩 I-004 + C-005 ~28h） → Month 3 生态/体验**（2026-05-02 更新）。
+**Audit-fixes Phase 4 进行中（4/5 完成 · 剩 C-005 ~20h） → Month 3 生态/体验**（2026-05-02 更新）。
 
 - 审阅产出：`docs/audit/2026-04-29/`（三方独立报告 Claude/Codex/Gemini + 综合 final-report.md）
 - 修复计划：`.claude/plan/audit-fixes.md`（41 个 issue × 4 个 Phase × 81h 工时，含 Codex 交叉验证合并决议）
 - **API 单一事实源**：`docs/openapi.json`（自动生成，CI gate 防漂移）；本地用 `bash scripts/gen-docs.sh` 重新生成
 - **执行模式**：Phase 2/3 期间用户授权 Claude 亲自执行（直接 Edit/Write，不派 Codex/team）。**Phase 3 已全清，临时例外随之失效**。Phase 4 默认回到「讨论 → 呈报 → 用户授权 → 派发 Codex/team」原协作流程，除非用户在新会话里重新授权例外。
 
-当前状态：backend **229 passed** · frontend **45 passed** · **e2e 12 passed (Playwright)** · type-check 退出 0 · Alembic head: **0010** · origin/main 完全同步
+当前状态：backend **232 passed** · frontend **45 passed** · **e2e 12 passed (Playwright)** · type-check 退出 0 · Alembic head: **0010** · origin/main 完全同步
 
 ### Phase 4 启动指南（新会话必读）
 
-> **📍 下次会话起点（2026-05-02）**：
-> - **完成 3/5**：I-007 ✅ / I-008 ✅ / I-006 ✅（详见下方「Phase 4 进行中」commit 表）
-> - **剩 2 项 ~28h**：I-004 PWA（8h）/ C-005 Token 改造（Part 1 8h + Part 2 12h，Part 2 已解锁因 e2e 在）
-> - **推荐第一句对 Claude 说**：「接 Phase 4 剩余两项。读 CLAUDE.md「Phase 4 进行中」表 + 启动指南，告诉我推荐先做 I-004 还是 C-005，以及协作模式（A/B/C）建议」
-> - **推荐顺序**：先 **I-004 PWA（独立 8h，无依赖）**，后 **C-005**（大件 20h，建议先 `/ccg:team-plan` 多模型审）
-> - **协作模式默认**：仍按上次定的 **C 模式**（I-004 中风险走 B；C-005 高风险走 B）
-> - **⚠️ 已知风险（必读）**：2026-05-01 期间 sub-agent spawn 5 次连续 panic（new-api 上游 bug，错误："runtime error: invalid memory address or nil pointer dereference"），I-006 临时 A 破例完成。**新会话开始前先 spawn 一个 Explore agent 跑 `ls` 验证 spawn 已恢复**；如果还坏，C-005 严格 B 模式无法执行，要么等修复，要么再次授权 A 破例
+> **📍 下次会话起点（2026-05-02 更新）**：
+> - **完成 4/5**：I-007 ✅ / I-008 ✅ / I-006 ✅ / I-004 ✅（详见下方「Phase 4 进行中」commit 表）
+> - **剩 1 项 ~20h**：C-005 Token 改造（Part 1 8h + Part 2 12h，Part 2 已解锁因 I-006 e2e 在）
+> - **推荐第一句对 Claude 说**：「接 Phase 4 最后一项 C-005。先读 `.claude/plan/audit-fixes.md` §1160（C-005 详细方案）+ 检查 sub-agent spawn / codex CLI 健康度，告诉我 Part 1 / Part 2 拆分顺序与协作模式建议」
+> - **推荐顺序**：先 **C-005 Part 1（8h）silent refresh + jti 黑名单**（不依赖 e2e），后 **Part 2（12h）HttpOnly Cookie + CSRF**（前置 I-006 ✅）
+> - **协作模式默认**：C-005 高风险，**强烈建议** B 模式 / B' 模式（spawn 修好就 spawn，spawn 坏就走 codex CLI 替代），先 `/ccg:team-plan`（或 `codex exec` + `gemini -p` 双模型）方案审；不建议 A 破例
+> - **⚠️ 已知风险 1（必读）**：2026-05-01 → 02 期间 sub-agent spawn 持续 panic + 1M context 报错（new-api 上游 bug），I-004 期间用户授权 A 模式破例 + Bash 调 codex/gemini CLI 替代 spawn 已验证可行（codex CLI 通畅，gemini 偶发 429）。**新会话开始前**：先 spawn 一个 Explore agent 跑 `ls` 验证；如果仍坏，至少要保 codex CLI 可用（`codex exec "..."`），否则 C-005 团审无法做
+> - **⚠️ 已知风险 2**：C-005 Part 1 会引入 alembic 0011（jti 黑名单表），与 audit-fixes Phase 3 的 0010 兼容；Part 2 改 auth 链路必须重跑 e2e 12 case + 新加 1-2 个 Cookie/CSRF case
 > - **gh CLI**：已装在 `~/.local/bin/gh` + 已 auth（账号 `northsea1225`，token scopes `repo`/`workflow`/`gist`/`read:org`）；CI debug 直接 `gh run view <id> --log-failed`
 
 **协作模式 — 用户在第一轮就要拍板**：
@@ -79,19 +80,18 @@ API 文档：`http://localhost:8000/docs`
 | ~~I-007 CI 安全扫描~~ | ~~后端 + GitHub Actions~~ | ~~2h~~ | §1189 | — | ~~低~~ | ✅ `5e81b53` |
 | ~~I-008 Python 3.9 → 3.11~~ | ~~后端 venv + 部署~~ | ~~4-6h~~ | §1216 | — | ~~中~~ | ✅ `4b45a71` |
 | ~~I-006 + I-002 Playwright e2e~~ | ~~跨栈~~ | ~~6h~~ | §1177 | — | ~~中~~ | ✅ `fc5f193` |
-| **I-004** PWA / Service Worker | 前端 + 后端 CORS | 8h | §1183 | 无 | 中（offline-first 缓存策略 + 后端 ETag/Cache-Control） | ⏳ 待做 |
+| ~~I-004 PWA / Service Worker~~ | ~~前端 + 后端 CORS~~ | ~~8h / ~7h~~ | §1183 | — | ~~中~~ | ✅ `f74182a` `1a90361` `da8df5b` `ebf906a` |
 | **C-005** Token 安全改造 | 跨栈大改 | 20h | §1160 | Part 2 ← I-006 ✅ | 高（auth 链路重写：silent refresh + jti 黑名单 + HttpOnly Cookie + CSRF） | ⏳ 待做 |
 
-**剩余 2 项推荐顺序**：
-1. **I-004**（8h）— PWA 独立可做，先做开胃
-2. **C-005 Part 1**（8h）— silent refresh + jti 黑名单（不依赖 e2e）
-3. **C-005 Part 2**（12h）— HttpOnly Cookie，**前置条件 I-006 已落地**
+**剩余 1 项推荐顺序**：
+1. **C-005 Part 1**（8h）— silent refresh + jti 黑名单（不依赖 e2e；引入 alembic 0011）
+2. **C-005 Part 2**（12h）— HttpOnly Cookie + CSRF，**前置条件 I-006 ✅ 已落地**
 
 **新会话第一步建议**：
-1. 读 `.claude/plan/audit-fixes.md` §1183（I-004 详细方案）/ §1160（C-005 详细方案）
-2. 与用户确认协作模式（A/B/C）
-3. 选第一个 issue（推荐 I-004）按模式执行
-4. **测试基线**：每次提交后 backend `229+` / frontend vitest `45+` / **e2e `12+`（如 spec 改了重跑）**；OpenAPI 改动后跑 `bash scripts/gen-docs.sh`
+1. 读 `.claude/plan/audit-fixes.md` §1160（C-005 详细方案）
+2. 与用户确认协作模式（推荐 B' = spawn 坏就走 codex CLI 替代）
+3. C-005 Part 1 先做（不依赖 e2e）；Part 2 等 Part 1 落地再做
+4. **测试基线**：每次提交后 backend `232+` / frontend vitest `45+` / **e2e `12+`（如 spec 改了重跑）**；OpenAPI 改动后跑 `bash scripts/gen-docs.sh`
 
 **重要不变量**：
 - Alembic head 当前 `0010`；C-005 Part 1 会引入 `0011`（jti 黑名单表）
@@ -100,6 +100,8 @@ API 文档：`http://localhost:8000/docs`
 - `AppEnv` enum 已在 config 强类型（L-007 落地）；新增环境变量遵循 enum 习惯
 - `taxonomy_constraints.py` / `mistake_constraints.py` 已是 schema 长度约束的集中点
 - `_MISTAKE_UUID_LOOKUP_CHUNK = 500`（L-005）作为 v3 import dedup 的 chunk size，未来如调，先看 SQLite 999 上限
+- **PWA**（I-004）：vite-plugin-pwa@1.2.0 + workbox 7；SW 缓存命名 `api-mistakes`（5min）/ `api-taxonomy`（30min）；navigateFallback denylist `/api/* /health /docs /openapi`；后端 `Cache-Control: private, max-age={300|1800}`；CORS `expose_headers=["ETag","Cache-Control"]`（ETag 生成 TODO，见 pwa-4 follow-up）
+- **prod npm audit**（CI gate `--omit=dev --audit-level=high`）：仅 2 moderate（来自 monaco-editor 老债，不破 high gate）；I-004 引入 vite-plugin-pwa 后 dev 树涨 11 漏洞（workbox/sirv 链）但都是 build-time，不进 prod
 
 ### Phase 1 已交付（5 个一行修复）
 
@@ -143,16 +145,16 @@ API 文档：`http://localhost:8000/docs`
 | M-006 list schema 瘦身 | `57d5567` | MistakeListOut 砍 4 markdown；前端 MistakeListItem；payload ~80% 净降 |
 | 顺带：tz_offset flake fix | `272cf5c` | 修 H-006 落地遗留的 fixture 边界 bug |
 
-### Phase 4 进行中（3/5 完成，2026-05-01 / 02）
+### Phase 4 进行中（4/5 完成，2026-05-01 / 02）
 
 | Issue | Commit | 工时（估/实际） | 备注 |
 |-------|--------|----------------|------|
 | I-007 CI 安全扫描 | `5e81b53` | 2h / ~2.5h | bandit -ll + pip-audit (4 ignore) + npm audit (high+) + bundle-size guard（非 worker raw ≤ 1MB / gzip ≤ 350KB；worker raw ≤ 8MB）；nosec B104 给 backend_host="0.0.0.0" |
 | I-008 Python 3.9 → 3.11.15 | `4b45a71` | 4-6h / ~1.5h | uv 装 3.11 + 重建 venv；multipart 0.0.20→0.0.27、dotenv 1.2.1→1.2.2 解锁 3 GHSA；SECURITY.md Accepted CVE 4→1（仅 pytest）；新建 `.python-version`；CI workflows 全部 `python-version: '3.11'`；测试 -30% 用时 |
 | I-006 Playwright e2e | `fc5f193` | 6h / ~3h | A 模式破例（spawn agent 5 次上游 panic 后授权直写）；3 spec / 12 cases (8.1s 全绿)；backend.ts globalSetup spawn uvicorn subprocess（固定 port 8000 + 空闲检查 + alembic upgrade head + tmp sqlite + SIGTERM/SIGKILL）；auth.ts per-spec fresh user `e2e_${ts}_${rand}`；vitest exclude `e2e/**` |
+| I-004 PWA / Service Worker | `f74182a` `1a90361` `da8df5b` `ebf906a` (+ docs sync commit) | 8h / ~7h | A 模式 5 刀（spawn 上游 panic 持续，用户授权 A + Bash 调 codex/gemini CLI 替代）：phase1 装 vite-plugin-pwa@1.2.0 + manifest（中英双名 / theme #6366F1）+ 三尺寸图标（sips 缩自 logo.png）/ phase2 SPA navigateFallback `index.html` + denylist `/api/* /health /docs /openapi` + `<PWAUpdatePrompt>`（useRegisterSW + antd notification bottomRight）/ phase3 NetworkFirst runtimeCaching（mistakes 5min 200 entries / categories+tags 30min 20 entries；非 GET 永不缓存；auth/ai/stats/review/import/export 全黑名单）/ phase4 后端 CORS expose_headers + GET 路由 Cache-Control private + 加 3 测试（test_cors +1 / test_cache_control +2）；测试基线 232/45/12 全绿；e2e offline 拆 follow-up（pwa-1，因 playwright dev server PWA 不工作）|
 
-**剩余 2 项**：
-- **I-004** PWA / Service Worker（8h，独立可做）
+**剩余 1 项**：
 - **C-005** Token 安全改造（Part 1 8h + Part 2 12h，Part 2 依赖 I-006 e2e 已完成）
 
 **已知 follow-up（非阻塞）**：
@@ -160,16 +162,17 @@ API 文档：`http://localhost:8000/docs`
 - I-006 backend fixture 固定 port 8000：原因 `frontend/src/services/api.ts:43` axios baseURL 写死。改运行时 env 注入是 follow-up
 - I-006 logout selector `.sider-user-footer button` first match 脆弱，sider 加按钮会破；建议加 `data-testid="logout-button"`
 - I-008 `backend/.venv-39-backup/`（81MB，已 gitignored）可手动 rm 清理
+- **I-004 衍生 4 项**（详见末尾「I-004 PWA 衍生 follow-up」段）：pwa-1 e2e offline / pwa-2 logout 清 SW caches / pwa-3 "稍后" sessionStorage 记忆 / pwa-4 ETag middleware
 
 ### Phase 4 双月（详见上方"Phase 4 启动指南"）
 
-C-005 Token 安全改造 / I-006 Playwright e2e / I-004 PWA / I-007 CI 扫描 / I-008 Python 3.9→3.11。
+C-005 Token 安全改造 / ~~I-006 Playwright e2e~~ ✅ / ~~I-004 PWA~~ ✅ / ~~I-007 CI 扫描~~ ✅ / ~~I-008 Python 3.9→3.11~~ ✅。**剩 C-005 一项 ~20h。**
 
 ### 新会话续做指引
 
 1. 读 `.claude/plan/audit-fixes.md` 找具体 issue 的 8 段方案（Files / Implementation / Tests / Edge cases / Dependencies / Risks / Acceptance / Effort）
 2. **Phase 4 协作模式默认 B**（讨论 → 呈方案 → 派 Codex/team），用户可在新会话第一轮重新授权 A 或 C
-3. 测试基准：每次提交前 `APP_ENV=test backend/.venv/bin/python -m pytest backend/tests/ -q` 应当 229+ passed（视新增测试而定）
+3. 测试基准：每次提交前 `APP_ENV=test backend/.venv/bin/python -m pytest backend/tests/ -q` 应当 232+ passed（视新增测试而定）
 4. OpenAPI 同步：任何 backend 路由 / Pydantic schema 变更后跑 `bash scripts/gen-docs.sh` 重新生成 `docs/openapi.json`，否则 CI gate 会卡 PR
 
 > Month 1（用户认证 Phase A+B + schema_v3 + CF 导入）已于 2026-04-24 全部交付。
@@ -180,6 +183,7 @@ C-005 Token 安全改造 / I-006 Playwright e2e / I-004 PWA / I-007 CI 扫描 / 
 > **Audit-fixes 计划（41 issue / 81h）**已于 2026-04-30 产出。
 > **Phase 2 完成 6/6** + **Phase 3 完成 6/6 高优先级** 于 2026-05-01。
 > **Phase 3 全清（含 M/L 收尾 10/10）+ tz_offset flake 修复** 于 2026-05-01。
+> **Phase 4 4/5 完成（I-006 + I-007 + I-008 + I-004）** 于 2026-05-01 → 02 全部交付。**剩 C-005**。
 
 ---
 
@@ -236,6 +240,20 @@ C-005 Token 安全改造 / I-006 Playwright e2e / I-004 PWA / I-007 CI 扫描 / 
 - **logout 状态清理**：logout 清空 `reviewStore` + `draftStore`；`main.tsx` side-effect import 确保 `mistakeStore` subscribe 在启动时注册
 - **v3 导入三层幂等**：session / item / log 分别去重，session dedup 含 6 字段（started_at / strategy / ended_at / total_count / completed_count / user_id，2026-04-26）
 - **i18n**：zh-CN + en-US 新增 `dashboard.streakDays`、`review.streakToast`、`review.streakMilestone7/30`、`review.enterImmersive`、`review.exitImmersive`
+
+### PWA / Service Worker ✅（2026-05-02 完成，I-004）
+- **Manifest**：`码错本 CodeRecall` / theme `#6366F1` / 三尺寸图标（192/512/maskable-512）/ `display: standalone` / `lang: zh-CN`
+- **Service Worker**（vite-plugin-pwa@1.2.0 + workbox 7）：
+  - precache 67 entries / 3.16 MB（Monaco 5 个 worker 显式排除：`ts/editor/json/css/html.worker-*.js`，单文件硬上限 3MB）
+  - SPA navigateFallback `index.html` + denylist `/api/* /health /docs /openapi`（防 SW 拦截后端路由）
+  - **runtime cache（GET 白名单）**：
+    - `api-mistakes`（NetworkFirst, 3s timeout, 200 entries, 5min TTL）：覆盖 `/api/v1/mistakes(/:id)?`
+    - `api-taxonomy`（NetworkFirst, 3s timeout, 20 entries, 30min TTL）：覆盖 `/api/v1/(categories|tags)(/:id)?`
+  - **不缓存**：auth/me, ai/* (SSE), stats/*, review/*, import/*, export/*；POST/PATCH/DELETE 永不缓存
+- **更新提示组件**：`PWAUpdatePrompt.tsx`（`useRegisterSW` + antd `notification.info` `bottomRight`，按钮"立即刷新/稍后"；i18n `pwa.{updateTitle,updateDescription,updateNow,updateLater}` zh+en）
+- **后端配合**：CORS `expose_headers=["ETag","Cache-Control"]`；GET mistakes 路径返回 `Cache-Control: private, max-age=300`；categories/tags 返回 `private, max-age=1800`
+- **测试**：backend `test_cache_control.py` 2 case + `test_cors.py` 1 case（共 +3，229→232）；vitest/type-check/bundle-size guard 全过；e2e offline 拆 follow-up pwa-1
+- **暂未做**（衍生 follow-up）：e2e offline coverage（pwa-1）/ logout 清 SW caches（pwa-2）/ "稍后" sessionStorage 记忆（pwa-3）/ ETag middleware（pwa-4）
 
 ### 主题 & 品牌 ✅
 - Light/Dark 模式完整支持，CSS 变量双主题（`tokens.css` 双套 `--app-sider-*`）
@@ -348,7 +366,10 @@ C-005 Token 安全改造 / I-006 Playwright e2e / I-004 PWA / I-007 CI 扫描 / 
 | `frontend/src/i18n/resources/zh-CN.ts` | 中文 i18n |
 | `frontend/src/i18n/resources/en-US.ts` | 英文 i18n |
 | `frontend/scripts/check-bundle-size.js` | I-007 bundle size guard（非-worker raw ≤ 1MB / gzip ≤ 350KB；worker raw ≤ 8MB） |
-| `frontend/playwright.config.ts` | I-006 Playwright e2e 配置（chromium，serial，globalSetup 起 backend，webServer 起 vite dev） |
+| `frontend/vite.config.ts` | I-004 PWA 配置（vite-plugin-pwa@1.2.0 + manifest + workbox precache + runtimeCaching 白名单 + navigateFallback denylist） |
+| `frontend/src/components/PWAUpdatePrompt.tsx` | I-004 PWA 更新提示组件（useRegisterSW + antd notification bottomRight） |
+| `frontend/public/icon-{192,512,maskable-512}.png` | I-004 PWA 图标（sips 缩自 logo.png） |
+| `frontend/playwright.config.ts` | I-006 Playwright e2e 配置（chromium，serial，globalSetup 起 backend，webServer 起 vite dev — 注：dev mode SW 不工作，offline e2e 见 pwa-1 follow-up） |
 | `frontend/e2e/fixtures/backend.ts` | I-006 globalSetup：tmp sqlite + alembic + 动态端口 + uvicorn subprocess + /health polling + try/finally SIGKILL |
 | `frontend/e2e/fixtures/auth.ts` | I-006 test-scoped fixture：注册 e2e-* 用户 + localStorage 注入 token（`coderecall_token`） |
 | `frontend/e2e/auth.spec.ts` | I-006 6 cases：注册/登录/登出/AuthGuard/F5 reload/health sanity |
@@ -529,3 +550,12 @@ C-005 Token 安全改造 / I-006 Playwright e2e / I-004 PWA / I-007 CI 扫描 / 
 | t2 | `authStore.ts:22` | Token 存 localStorage，XSS 时爆炸半径大；有效期 7 天无 revocation | 评估换 HttpOnly Cookie + refresh token；至少缩短 `access_token_expire_minutes` |
 | t3 | `Dashboard/index.tsx` | Recent Mistakes 列表和 Tag Cloud 无可点击导航 | 加 `<Link>` 或 `onClick` 跳转到对应筛选视图 |
 | t4 | `Register/index.tsx` | ~~前端表单缺少长度校验~~ | ✅ M3 修复时已同步（2026-04-26） |
+
+### I-004 PWA 衍生 follow-up（2026-05-02 加入）
+
+| ID | 范围 | 问题 | 修复方向 |
+|----|------|------|---------|
+| pwa-1 | `frontend/playwright.config.ts` + `frontend/e2e/offline.spec.ts`（新建）| I-004 没有 e2e 自动化保护「断网可看 mistakes」；当前 playwright `webServer` 起的是 dev server，PWA 不工作 | 切 webServer 到 `npm run build && npm run preview`，加 1 个 offline spec（`context.setOffline(true)` + reload + 验列表仍渲染）；预估 1.5-2h |
+| pwa-2 | `frontend/src/stores/authStore.ts` `logout()` | 多用户共用浏览器场景：A 登出 → B 登入，离线时 B 可能看到 A 的 cached mistakes（cache key 仅 URL，不含 user_id）| logout 时调 `caches.delete('api-mistakes')` + `caches.delete('api-taxonomy')`；预估 30min |
+| pwa-3 | `frontend/src/components/PWAUpdatePrompt.tsx` | 用户点 "稍后" 后，本会话内若再有 SW 更新仍会再弹（无持久化记忆）| 加 sessionStorage 标记记忆；预估 20min |
+| pwa-4 | 后端 `app/main.py` 加 ETag middleware | plan §1185 提的 304 Not Modified 优化未实施（当前 NetworkFirst 5min TTL 已减 90% 请求量，ETag 收益边际）| 引入 fastapi-etag 或自写 middleware；CORS expose_headers 已提前布局；预估 2h |
