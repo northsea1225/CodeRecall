@@ -47,14 +47,14 @@ API 文档：`http://localhost:8000/docs`
 
 ## 当前焦点
 
-**Audit-fixes Phase 3 全清（高优先级 6/6 + M/L 收尾 10/10） → Phase 4 双月（5 项 / ~30h）准备启动**（2026-05-01 更新）。
+**Audit-fixes Phase 4 进行中（3/5 完成 · 剩 I-004 + C-005 ~28h） → Month 3 生态/体验**（2026-05-02 更新）。
 
 - 审阅产出：`docs/audit/2026-04-29/`（三方独立报告 Claude/Codex/Gemini + 综合 final-report.md）
 - 修复计划：`.claude/plan/audit-fixes.md`（41 个 issue × 4 个 Phase × 81h 工时，含 Codex 交叉验证合并决议）
 - **API 单一事实源**：`docs/openapi.json`（自动生成，CI gate 防漂移）；本地用 `bash scripts/gen-docs.sh` 重新生成
 - **执行模式**：Phase 2/3 期间用户授权 Claude 亲自执行（直接 Edit/Write，不派 Codex/team）。**Phase 3 已全清，临时例外随之失效**。Phase 4 默认回到「讨论 → 呈报 → 用户授权 → 派发 Codex/team」原协作流程，除非用户在新会话里重新授权例外。
 
-当前状态：backend **229 passed** · frontend **45 passed** · type-check 退出 0 · Alembic head: **0010** · origin/main 完全同步
+当前状态：backend **229 passed** · frontend **45 passed** · **e2e 12 passed (Playwright)** · type-check 退出 0 · Alembic head: **0010** · origin/main 完全同步
 
 ### Phase 4 启动指南（新会话必读）
 
@@ -135,6 +135,24 @@ API 文档：`http://localhost:8000/docs`
 | M-012 + L-004 useAiAnalysisStream | `d2777d2` | parseErrorBody helper + 选择性 dev warn；5 boundary case |
 | M-006 list schema 瘦身 | `57d5567` | MistakeListOut 砍 4 markdown；前端 MistakeListItem；payload ~80% 净降 |
 | 顺带：tz_offset flake fix | `272cf5c` | 修 H-006 落地遗留的 fixture 边界 bug |
+
+### Phase 4 进行中（3/5 完成，2026-05-01 / 02）
+
+| Issue | Commit | 工时（估/实际） | 备注 |
+|-------|--------|----------------|------|
+| I-007 CI 安全扫描 | `5e81b53` | 2h / ~2.5h | bandit -ll + pip-audit (4 ignore) + npm audit (high+) + bundle-size guard（非 worker raw ≤ 1MB / gzip ≤ 350KB；worker raw ≤ 8MB）；nosec B104 给 backend_host="0.0.0.0" |
+| I-008 Python 3.9 → 3.11.15 | `4b45a71` | 4-6h / ~1.5h | uv 装 3.11 + 重建 venv；multipart 0.0.20→0.0.27、dotenv 1.2.1→1.2.2 解锁 3 GHSA；SECURITY.md Accepted CVE 4→1（仅 pytest）；新建 `.python-version`；CI workflows 全部 `python-version: '3.11'`；测试 -30% 用时 |
+| I-006 Playwright e2e | `fc5f193` | 6h / ~3h | A 模式破例（spawn agent 5 次上游 panic 后授权直写）；3 spec / 12 cases (8.1s 全绿)；backend.ts globalSetup spawn uvicorn subprocess（固定 port 8000 + 空闲检查 + alembic upgrade head + tmp sqlite + SIGTERM/SIGKILL）；auth.ts per-spec fresh user `e2e_${ts}_${rand}`；vitest exclude `e2e/**` |
+
+**剩余 2 项**：
+- **I-004** PWA / Service Worker（8h，独立可做）
+- **C-005** Token 安全改造（Part 1 8h + Part 2 12h，Part 2 依赖 I-006 e2e 已完成）
+
+**已知 follow-up（非阻塞）**：
+- I-006 mistakes spec 缩减 5→3：分页（25 条 batch）+ LaTeX 渲染 case 留作 v2
+- I-006 backend fixture 固定 port 8000：原因 `frontend/src/services/api.ts:43` axios baseURL 写死。改运行时 env 注入是 follow-up
+- I-006 logout selector `.sider-user-footer button` first match 脆弱，sider 加按钮会破；建议加 `data-testid="logout-button"`
+- I-008 `backend/.venv-39-backup/`（81MB，已 gitignored）可手动 rm 清理
 
 ### Phase 4 双月（详见上方"Phase 4 启动指南"）
 
