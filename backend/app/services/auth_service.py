@@ -12,7 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.errors import raise_api_error
-from app.core.config import settings
+from app.core.config import AppEnv, settings
 from app.models import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -153,7 +153,7 @@ _LEGACY_OLD_USER_PASSWORDS = ("coderecall", "change_me_immediately")
 
 
 def _maybe_rotate_old_user_password(db: Session, user: User) -> None:
-    if settings.app_env.strip().lower() == "test":
+    if settings.app_env == AppEnv.TEST:
         return
     if any(verify_password(pwd, user.password_hash) for pwd in _LEGACY_OLD_USER_PASSWORDS):
         user.password_hash = hash_password(settings.old_user_initial_password)

@@ -1,4 +1,5 @@
 import logging
+from enum import Enum
 from functools import lru_cache
 from pathlib import Path
 from typing import Optional
@@ -23,9 +24,16 @@ _INSECURE_OLD_USER_PASSWORDS = {
 }
 
 
+class AppEnv(str, Enum):
+    DEVELOPMENT = "development"
+    TEST = "test"
+    STAGING = "staging"
+    PRODUCTION = "production"
+
+
 class Settings(BaseSettings):
     app_name: str = Field(default="CodeRecall API", alias="APP_NAME")
-    app_env: str = Field(default="development", alias="APP_ENV")
+    app_env: AppEnv = Field(default=AppEnv.DEVELOPMENT, alias="APP_ENV")
     api_v1_prefix: str = Field(default="/api/v1", alias="API_V1_PREFIX")
     backend_host: str = Field(default="0.0.0.0", alias="BACKEND_HOST")
     backend_port: int = Field(default=8000, alias="BACKEND_PORT")
@@ -78,9 +86,8 @@ class Settings(BaseSettings):
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     s = Settings()
-    env = s.app_env.strip().lower()
 
-    if env == "test":
+    if s.app_env == AppEnv.TEST:
         if s.jwt_secret_key.strip() in _INSECURE_JWT_SECRETS:
             logger.warning("JWT_SECRET_KEY is using the default test value.")
         if s.old_user_initial_password.strip() in _INSECURE_OLD_USER_PASSWORDS:

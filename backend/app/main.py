@@ -114,5 +114,5 @@ def health_check() -> dict[str, str]:
     return {
         "status": "ok",
         "service": settings.app_name,
-        "environment": settings.app_env,
+        "environment": settings.app_env.value,
     }

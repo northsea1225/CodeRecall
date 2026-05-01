@@ -2,6 +2,7 @@ import logging
 from unittest.mock import patch
 
 import pytest
+from pydantic import ValidationError
 
 import app.core.config as config_module
 
@@ -72,6 +73,17 @@ def test_production_default_jwt_secret_fails():
             {
                 "APP_ENV": "production",
                 "JWT_SECRET_KEY": "change-me-in-production",
+                "OLD_USER_INITIAL_PASSWORD": "MyStrongPass123!@#",
+            }
+        )
+
+
+def test_invalid_app_env_raises_validation_error():
+    with pytest.raises(ValidationError):
+        _build_settings(
+            {
+                "APP_ENV": "produciton",
+                "JWT_SECRET_KEY": "a" * 48,
                 "OLD_USER_INITIAL_PASSWORD": "MyStrongPass123!@#",
             }
         )
