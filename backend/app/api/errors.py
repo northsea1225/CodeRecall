@@ -1,21 +1,32 @@
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from fastapi import HTTPException, status
+from pydantic import BaseModel
 
 
-def error_payload(code: str, message: str, detail: Optional[Any] = None) -> dict[str, Any]:
-    return {
-        "code": code,
-        "message": message,
-        "detail": {} if detail is None else detail,
-    }
+ErrorDetail = Union[dict[str, Any], list[dict[str, Any]], None]
+
+
+class ApiErrorOut(BaseModel):
+    code: str
+    message: str
+    detail: ErrorDetail = None
+
+
+def error_payload(
+    code: str,
+    message: str,
+    detail: ErrorDetail = None,
+) -> dict[str, Any]:
+    normalized: ErrorDetail = {} if detail is None else detail
+    return ApiErrorOut(code=code, message=message, detail=normalized).model_dump()
 
 
 def raise_api_error(
     status_code: int,
     code: str,
     message: str,
-    detail: Optional[Any] = None,
+    detail: ErrorDetail = None,
 ) -> None:
     raise HTTPException(
         status_code=status_code,
