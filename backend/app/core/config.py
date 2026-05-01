@@ -62,10 +62,14 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins(self) -> list[str]:
-        origins = {self.frontend_origin}
-        if "localhost" in self.frontend_origin:
-            origins.add(self.frontend_origin.replace("localhost", "127.0.0.1"))
-        return sorted(origins)
+        raw = self.frontend_origin
+        origins = {o.strip() for o in raw.split(",") if o.strip()}
+        expanded: set[str] = set()
+        for origin in origins:
+            expanded.add(origin)
+            if "localhost" in origin:
+                expanded.add(origin.replace("localhost", "127.0.0.1"))
+        return sorted(expanded)
 
     @property
     def sqlite_database_path(self) -> Optional[Path]:
