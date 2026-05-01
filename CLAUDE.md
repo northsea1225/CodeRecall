@@ -58,33 +58,40 @@ API 文档：`http://localhost:8000/docs`
 
 ### Phase 4 启动指南（新会话必读）
 
+> **📍 下次会话起点（2026-05-02）**：
+> - **完成 3/5**：I-007 ✅ / I-008 ✅ / I-006 ✅（详见下方「Phase 4 进行中」commit 表）
+> - **剩 2 项 ~28h**：I-004 PWA（8h）/ C-005 Token 改造（Part 1 8h + Part 2 12h，Part 2 已解锁因 e2e 在）
+> - **推荐第一句对 Claude 说**：「接 Phase 4 剩余两项。读 CLAUDE.md「Phase 4 进行中」表 + 启动指南，告诉我推荐先做 I-004 还是 C-005，以及协作模式（A/B/C）建议」
+> - **推荐顺序**：先 **I-004 PWA（独立 8h，无依赖）**，后 **C-005**（大件 20h，建议先 `/ccg:team-plan` 多模型审）
+> - **协作模式默认**：仍按上次定的 **C 模式**（I-004 中风险走 B；C-005 高风险走 B）
+> - **⚠️ 已知风险（必读）**：2026-05-01 期间 sub-agent spawn 5 次连续 panic（new-api 上游 bug，错误："runtime error: invalid memory address or nil pointer dereference"），I-006 临时 A 破例完成。**新会话开始前先 spawn 一个 Explore agent 跑 `ls` 验证 spawn 已恢复**；如果还坏，C-005 严格 B 模式无法执行，要么等修复，要么再次授权 A 破例
+> - **gh CLI**：已装在 `~/.local/bin/gh` + 已 auth（账号 `northsea1225`，token scopes `repo`/`workflow`/`gist`/`read:org`）；CI debug 直接 `gh run view <id> --log-failed`
+
 **协作模式 — 用户在第一轮就要拍板**：
 - **A**（延续例外）：Claude 直接 Edit/Write，每次实施前仍呈方案 + 等"做"/"可以"
 - **B**（默认协作）：Claude 讨论 → 呈方案 → 派 Codex / team 执行 → 复核
-- **C**（混合）：低风险（I-007 CI / I-008 Python 升级）走 A，高风险（C-005 Token / I-004 PWA / I-006 e2e）走 B
+- **C**（混合）：低风险走 A，高风险（C-005 Token / I-004 PWA）走 B
 
 **Phase 4 5 项 issue 概览**：
 
-| Issue | 性质 | 工时 | plan § | 依赖 | 风险 |
-|-------|------|------|--------|------|------|
-| **I-007** CI 安全扫描 | 后端 + GitHub Actions | 2h | §1189 | 无 | 低（纯 yaml 增补 + bandit/pip-audit/npm audit/bundle size） |
-| **I-008** Python 3.9 → 3.11 | 后端 venv + 部署 | 4-6h | §1216 | 无 | 中（重建 venv + 解锁 3 个 CVE pin + 文档/Dockerfile/CI 同步） |
-| **I-006 + I-002** Playwright e2e | 跨栈 | 6h | §1177 | 无 | 中（CI fixture 起 uvicorn subprocess + docker-compose） |
-| **I-004** PWA / Service Worker | 前端 + 后端 CORS | 8h | §1183 | 无 | 中（offline-first 缓存策略 + 后端 ETag/Cache-Control） |
-| **C-005** Token 安全改造 | 跨栈大改 | 20h | §1160 | **Part 2 依赖 I-006** | 高（auth 链路重写：silent refresh + jti 黑名单 + HttpOnly Cookie + CSRF） |
+| Issue | 性质 | 工时 | plan § | 依赖 | 风险 | 状态 |
+|-------|------|------|--------|------|------|------|
+| ~~I-007 CI 安全扫描~~ | ~~后端 + GitHub Actions~~ | ~~2h~~ | §1189 | — | ~~低~~ | ✅ `5e81b53` |
+| ~~I-008 Python 3.9 → 3.11~~ | ~~后端 venv + 部署~~ | ~~4-6h~~ | §1216 | — | ~~中~~ | ✅ `4b45a71` |
+| ~~I-006 + I-002 Playwright e2e~~ | ~~跨栈~~ | ~~6h~~ | §1177 | — | ~~中~~ | ✅ `fc5f193` |
+| **I-004** PWA / Service Worker | 前端 + 后端 CORS | 8h | §1183 | 无 | 中（offline-first 缓存策略 + 后端 ETag/Cache-Control） | ⏳ 待做 |
+| **C-005** Token 安全改造 | 跨栈大改 | 20h | §1160 | Part 2 ← I-006 ✅ | 高（auth 链路重写：silent refresh + jti 黑名单 + HttpOnly Cookie + CSRF） | ⏳ 待做 |
 
-**推荐顺序**：
-1. **I-007**（2h）→ **I-008**（4-6h）— 低风险开胃；I-008 顺手干掉 SECURITY.md 里 3 条 Accepted CVE
-2. **I-006**（6h）— 解锁 C-005 Part 2 的回归保护
-3. **C-005 Part 1**（8h）— silent refresh + jti 黑名单（不依赖 e2e）
-4. **I-004**（8h）— PWA 独立可做
-5. **C-005 Part 2**（12h）— HttpOnly Cookie，**前置条件 I-006 已落地**
+**剩余 2 项推荐顺序**：
+1. **I-004**（8h）— PWA 独立可做，先做开胃
+2. **C-005 Part 1**（8h）— silent refresh + jti 黑名单（不依赖 e2e）
+3. **C-005 Part 2**（12h）— HttpOnly Cookie，**前置条件 I-006 已落地**
 
 **新会话第一步建议**：
-1. 读 `.claude/plan/audit-fixes.md` §1156-1300（Phase 4 5 项的 8 段方案）
+1. 读 `.claude/plan/audit-fixes.md` §1183（I-004 详细方案）/ §1160（C-005 详细方案）
 2. 与用户确认协作模式（A/B/C）
-3. 选第一个 issue（推荐 I-007）按模式执行
-4. **测试基线**：每次提交后 backend `229+` / frontend `45+`；OpenAPI 改动后跑 `bash scripts/gen-docs.sh`
+3. 选第一个 issue（推荐 I-004）按模式执行
+4. **测试基线**：每次提交后 backend `229+` / frontend vitest `45+` / **e2e `12+`（如 spec 改了重跑）**；OpenAPI 改动后跑 `bash scripts/gen-docs.sh`
 
 **重要不变量**：
 - Alembic head 当前 `0010`；C-005 Part 1 会引入 `0011`（jti 黑名单表）
