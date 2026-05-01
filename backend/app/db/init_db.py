@@ -79,11 +79,12 @@ def initialize_database(database_url: Optional[str] = None, force_fallback: bool
 
 def _ensure_old_user(database_url: str) -> None:
     engine = create_engine(database_url, connect_args=_connect_args(database_url))
-    with Session(engine, autoflush=False, autocommit=False, expire_on_commit=False) as db:
-        has_users_table = engine.dialect.has_table(db.connection(), "users")
-        if has_users_table:
-            ensure_default_old_user(db)
-    engine.dispose()
+    try:
+        with Session(engine, autoflush=False, autocommit=False, expire_on_commit=False) as db:
+            if engine.dialect.has_table(db.connection(), "users"):
+                ensure_default_old_user(db)
+    finally:
+        engine.dispose()
 
 
 def should_initialize_database(database_url: Optional[str] = None) -> bool:
