@@ -47,14 +47,14 @@ API 文档：`http://localhost:8000/docs`
 
 ## 当前焦点
 
-**Audit-fixes Phase 3 完成（6/6 高优先级 + 关键基础设施） → 仅剩 M/L 收尾项**（2026-05-01 更新）。
+**Audit-fixes Phase 3 全清（高优先级 6/6 + M/L 收尾 10/10） → 仅剩 Phase 4 双月项**（2026-05-01 更新）。
 
 - 审阅产出：`docs/audit/2026-04-29/`（三方独立报告 Claude/Codex/Gemini + 综合 final-report.md）
 - 修复计划：`.claude/plan/audit-fixes.md`（41 个 issue × 4 个 Phase × 81h 工时，含 Codex 交叉验证合并决议）
 - **API 单一事实源**：`docs/openapi.json`（自动生成，CI gate 防漂移）；本地用 `bash scripts/gen-docs.sh` 重新生成
 - **执行模式**：用户在 Phase 2 起授权 Claude 亲自执行（直接 Edit/Write，不派 Codex/team），每次实施前仍呈报具体改动 + 等待确认。**新会话续做时建议重新和用户确认是否延续此例外**
 
-当前状态：backend **197 passed** · frontend **40 passed** · type-check 退出 0 · Alembic head: **0009**
+当前状态：backend **229 passed** · frontend **45 passed** · type-check 退出 0 · Alembic head: **0010**
 
 ### Phase 1 已交付（5 个一行修复）
 
@@ -82,20 +82,21 @@ API 文档：`http://localhost:8000/docs`
 | H-006 stats SQL push-down | `0cac770` | 5 函数 SQL 聚合 + alembic 0009（3 复合索引）+ heatmap 顺手修 |
 | H-002 + I-001 OpenAPI 单一源 | `534a5db` | scripts/gen-docs.sh + docs/openapi.json + GitHub Actions gate；删除 api-contract-current.md；修 4 处 `/auth/*` 错描述 |
 
-### Phase 3 剩余（M/L 项，约 13.5h，无依赖）
+### Phase 3 完成（M/L 收尾 10/10，2026-05-01）
 
-| Issue | 工时 | 性质 | plan § |
-|-------|------|------|--------|
-| M-001 CORS 配置紧化 | ~1h | 后端 config | §882 |
-| M-004 Category/Tag schema 长度约束 | ~1h | 后端 schema | §920 |
-| M-006 list_mistakes 拆 MistakeListOut | ~2h | 后端+前端协调 | §946 |
-| M-008 i18n 5+ 组件 | ~2h | 前端 | §979 |
-| M-010 MAX_TITLE_LEN 200 vs 500 同步 | ~0.5h | ORM/schema/前端三方对齐 | §983 |
-| M-012 + L-004 useAiAnalysisStream 改进 | ~1h | 前端 | §1003 |
-| L-002 errors.py Optional[Any] schema 化 | ~1h | 后端 | §1020 |
-| L-003 _ensure_old_user 复用 SessionLocal | ~0.5h | 后端 | §1041 |
-| L-005 v3 import dedup 内存读 UUID | ~1.5h | 后端 | §1007 |
-| L-007 JWT secret check 强类型 | ~1h | 后端 | §1056 |
+| Issue | Commit | 备注 |
+|-------|--------|------|
+| L-003 _ensure_old_user try/finally | `3a74db3` | plan §1041 SessionLocal 方案与测试架构冲突，改为补 try/finally 防 engine leak |
+| M-010 MAX_TITLE_LEN 三方对齐 | `957d680` | schema/ORM 500/255 → 200；alembic 0010 batch_alter；source 同步；OpenAPI 6 处 |
+| L-007 APP_ENV enum 强类型 | `c153fb8` | AppEnv(str, Enum) + auth_service / health endpoint .value 同步 |
+| M-001 CORS 收紧 | `4715302` | allowlist methods/headers + max_age=3600；新建 test_cors.py 4 case |
+| M-004 Cat/Tag schema 长度约束 | `9befd0f` | taxonomy_constraints.py 集中常量 + import_export 路径全覆盖；15 个 boundary case |
+| L-002 errors.py envelope schema | `fef25cd` | ApiErrorOut + ErrorDetail 类型签；保 None→{} 兼容；6 boundary case |
+| L-005 v3 import chunk dedup | `836f84d` | _MISTAKE_UUID_LOOKUP_CHUNK=500 + dict.fromkeys 顺序去重；3 boundary case |
+| M-008 i18n 5 组件 | `db8ff68` | 26 个新 key；urlImport/variant/onboarding namespace；ReviewPageState 顺手双语化 |
+| M-012 + L-004 useAiAnalysisStream | `d2777d2` | parseErrorBody helper + 选择性 dev warn；5 boundary case |
+| M-006 list schema 瘦身 | `57d5567` | MistakeListOut 砍 4 markdown；前端 MistakeListItem；payload ~80% 净降 |
+| 顺带：tz_offset flake fix | `272cf5c` | 修 H-006 落地遗留的 fixture 边界 bug |
 
 ### Phase 4 双月（约 30h，未启动）
 
@@ -105,7 +106,7 @@ C-005 Token 安全改造 / I-006 Playwright e2e / I-004 PWA / I-007 CI 扫描 / 
 
 1. 读 `.claude/plan/audit-fixes.md` 找具体 issue 的 8 段方案（Files / Implementation / Tests / Edge cases / Dependencies / Risks / Acceptance / Effort）
 2. 按 Phase 2/3 既有协作模式：调研 → 呈报方案 → 等"做"/"可以" → 落地 → 跑测试 → 提交
-3. 测试基准：每次提交前 `APP_ENV=test backend/.venv/bin/python -m pytest backend/tests/ -q` 应当 197+ passed（视新增测试而定）
+3. 测试基准：每次提交前 `APP_ENV=test backend/.venv/bin/python -m pytest backend/tests/ -q` 应当 229+ passed（视新增测试而定）
 4. OpenAPI 同步：任何 backend 路由 / Pydantic schema 变更后跑 `bash scripts/gen-docs.sh` 重新生成 `docs/openapi.json`，否则 CI gate 会卡 PR
 
 > Month 1（用户认证 Phase A+B + schema_v3 + CF 导入）已于 2026-04-24 全部交付。
@@ -115,6 +116,7 @@ C-005 Token 安全改造 / I-006 Playwright e2e / I-004 PWA / I-007 CI 扫描 / 
 > **全栈大规模审阅（三方独立 + 综合）**已于 2026-04-29 完成。
 > **Audit-fixes 计划（41 issue / 81h）**已于 2026-04-30 产出。
 > **Phase 2 完成 6/6** + **Phase 3 完成 6/6 高优先级** 于 2026-05-01。
+> **Phase 3 全清（含 M/L 收尾 10/10）+ tz_offset flake 修复** 于 2026-05-01。
 
 ---
 

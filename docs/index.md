@@ -31,4 +31,4 @@
 
 - **颜色与间距**：只使用 `frontend/src/styles/tokens.css` 中的 CSS 变量，禁止硬编码颜色
 - **API 字段**：以 `docs/openapi.json` / `/docs` 为单一事实源；CI gate (`.github/workflows/openapi-sync.yml`) 阻止漂移
-- **测试基线**：Backend 197 passed · Frontend 40 passed · Alembic head: 0009
+- **测试基线**：Backend 229 passed · Frontend 45 passed · Alembic head: 0010
