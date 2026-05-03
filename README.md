@@ -13,7 +13,7 @@ Core loop: **Import problem → Record mistake → SM-2 scheduled review → 6-s
 
 - **Spaced Repetition (SM-2):** Optimized review scheduling for long-term retention.
 - **6-Stage AI Coaching:** Dynamic prompts adapt to your review stage (`new_mistake` / `early_review` / `repeated_weakness` / `lapsed` / `oscillator` / `maintenance`).
-- **JWT User Auth & Data Isolation:** Secure per-user data with Bearer token authentication.
+- **JWT User Auth & Data Isolation:** Secure per-user data with Bearer token authentication; access tokens auto-refresh silently with single-flight + 5-minute pre-expiry; logout writes the token's `jti` to a server-side revocation list.
 - **Streak Dashboard:** Continuous review streak, heatmap, trend charts, algorithm radar.
 - **Immersive Dark Room Review:** Full-screen distraction-free review mode (`/review/immersive`).
 - **CF / LeetCode URL Import:** One-click problem statement import from Codeforces and LeetCode (CN/EN).
@@ -100,7 +100,9 @@ Create `backend/.env` from `backend/.env.example`.
 |----------|-------------|---------|
 | `JWT_SECRET_KEY` | HS256 signing secret — **must change in production** | `change-me-in-production` |
 | `JWT_ALGORITHM` | JWT algorithm | `HS256` |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | Token lifetime (minutes) | `10080` (7 days) |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Access token lifetime (minutes); silent refresh keeps sessions alive | `120` (2 hours) |
+| `ACCESS_TOKEN_REFRESH_GRACE_SECONDS` | Leeway for `/auth/refresh` to tolerate clock skew | `120` |
+| `TOKEN_BLACKLIST_CLEANUP_INTERVAL_SECONDS` | Throttle for lazy cleanup of revoked-token table | `600` |
 | `OLD_USER_INITIAL_PASSWORD` | Initial password for legacy-data owner account | `coderecall` |
 
 ### AI (optional)
@@ -125,8 +127,10 @@ All routes are at `/api/v1`, including auth (`/api/v1/auth/*`).
 
 | Route | Description |
 |-------|-------------|
-| `POST /api/v1/auth/token` | Login (form-encoded) |
-| `POST /api/v1/auth/register` | Register new user |
+| `POST /api/v1/auth/token` | Login (form-encoded, rate-limited 10/min) |
+| `POST /api/v1/auth/register` | Register new user (JSON, rate-limited 3/hour) |
+| `POST /api/v1/auth/refresh` | Refresh access token (rate-limited 120/min;1000/hour) |
+| `POST /api/v1/auth/logout` | Revoke current token's jti |
 | `GET /api/v1/auth/me` | Current user info |
 | `GET /api/v1/mistakes` | List mistakes (paginated, filterable) |
 | `POST /api/v1/mistakes` | Create mistake |

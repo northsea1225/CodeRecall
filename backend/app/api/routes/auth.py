@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import jwt
 from fastapi import APIRouter, Depends, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, oauth2_scheme
 from app.api.errors import raise_api_error
+from app.core.config import settings
 from app.core.limiter import limiter
 from app.db.session import get_db
 from app.models import User
@@ -19,6 +21,13 @@ from app.services.auth_service import (
     authenticate_user,
     create_access_token,
     create_user,
+    decode_access_token,
+    token_exp_datetime,
+)
+from app.services.token_blacklist_service import (
+    is_jti_blacklisted,
+    maybe_cleanup_blacklist,
+    revoke_jti,
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -47,6 +56,10 @@ class UserOut(BaseModel):
     is_active: bool
 
 
+class LogoutOut(BaseModel):
+    ok: bool = True
+
+
 def _auth_response(user: User) -> AuthOut:
     return AuthOut(
         access_token=create_access_token(user.id, user.username),
@@ -73,6 +86,60 @@ def login_route(
 def register_route(request: Request, payload: RegisterIn, db: Session = Depends(get_db)) -> AuthOut:
     user = create_user(db, payload.username, payload.password)
     return _auth_response(user)
+
+
+@router.post("/refresh", response_model=AuthOut)
+@limiter.limit("120/minute;1000/hour")
+def refresh_route(
+    request: Request,
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> AuthOut:
+    try:
+        payload = decode_access_token(
+            token,
+            leeway_seconds=settings.access_token_refresh_grace_seconds,
+        )
+        user_id = int(payload["sub"])
+        jti = payload["jti"]
+    except jwt.ExpiredSignatureError:
+        raise_api_error(401, "token_expired", "Token has expired.", {})
+    except (jwt.InvalidTokenError, KeyError, TypeError, ValueError):
+        raise_api_error(401, "invalid_token", "Invalid token.", {})
+
+    if is_jti_blacklisted(db, jti):
+        raise_api_error(401, "token_revoked", "Token has been revoked.", {})
+
+    user = db.get(User, user_id)
+    if user is None or not user.is_active:
+        raise_api_error(401, "unauthorized", "Invalid credentials.", {})
+
+    return _auth_response(user)
+
+
+@router.post("/logout", response_model=LogoutOut)
+def logout_route(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> LogoutOut:
+    try:
+        payload = decode_access_token(
+            token,
+            leeway_seconds=settings.access_token_refresh_grace_seconds,
+        )
+        revoke_jti(
+            db,
+            jti=payload["jti"],
+            user_id=int(payload["sub"]),
+            exp_at=token_exp_datetime(payload),
+        )
+        maybe_cleanup_blacklist(
+            db,
+            interval_seconds=settings.token_blacklist_cleanup_interval_seconds,
+        )
+    except (jwt.PyJWTError, KeyError, TypeError, ValueError):
+        raise_api_error(401, "invalid_token", "Invalid token.", {})
+    return LogoutOut()
 
 
 @router.get("/me", response_model=UserOut)

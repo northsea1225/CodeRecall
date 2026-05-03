@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from app.models.mistake import Mistake
     from app.models.review import ReviewLog, ReviewSession
     from app.models.tag import Tag
+    from app.models.token_jti_blacklist import TokenJtiBlacklist
 
 
 class User(Base):
@@ -40,3 +41,8 @@ class User(Base):
     tags: Mapped[list["Tag"]] = relationship("Tag", back_populates="owner")
     review_sessions: Mapped[list["ReviewSession"]] = relationship("ReviewSession", back_populates="owner")
     review_logs: Mapped[list["ReviewLog"]] = relationship("ReviewLog", back_populates="owner")
+    token_blacklist_entries: Mapped[list["TokenJtiBlacklist"]] = relationship(
+        "TokenJtiBlacklist",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )

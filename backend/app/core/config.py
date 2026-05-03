@@ -49,7 +49,9 @@ class Settings(BaseSettings):
     llm_quick_model: str = Field(default="", alias="LLM_QUICK_MODEL")
     jwt_secret_key: str = Field(default=_DEFAULT_JWT_SECRET, alias="JWT_SECRET_KEY")
     jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
-    access_token_expire_minutes: int = Field(default=10080, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
+    access_token_expire_minutes: int = Field(default=120, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
+    access_token_refresh_grace_seconds: int = Field(default=120, alias="ACCESS_TOKEN_REFRESH_GRACE_SECONDS")
+    token_blacklist_cleanup_interval_seconds: int = Field(default=600, alias="TOKEN_BLACKLIST_CLEANUP_INTERVAL_SECONDS")
     old_user_initial_password: str = Field(default="", alias="OLD_USER_INITIAL_PASSWORD")
     rate_limit_enabled: bool = Field(default=True, alias="RATE_LIMIT_ENABLED")
 

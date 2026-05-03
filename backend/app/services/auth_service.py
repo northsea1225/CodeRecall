@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 import logging
 import re
+import uuid
 from typing import Optional
 
 import jwt
@@ -43,16 +44,31 @@ def create_access_token(user_id: int, username: str) -> str:
         "username": username,
         "typ": "access",
         "iat": int(now.timestamp()),
-        "exp": expires_at,
+        "exp": int(expires_at.timestamp()),
+        "jti": uuid.uuid4().hex,
     }
     return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
 
 
-def decode_access_token(token: str) -> dict:
-    payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+def decode_access_token(token: str, *, leeway_seconds: int = 0) -> dict:
+    payload = jwt.decode(
+        token,
+        settings.jwt_secret_key,
+        algorithms=[settings.jwt_algorithm],
+        leeway=leeway_seconds,
+    )
     if payload.get("typ") != "access":
         raise jwt.InvalidTokenError("Invalid token type.")
+    if not isinstance(payload.get("jti"), str):
+        raise jwt.InvalidTokenError("Missing token jti.")
     return payload
+
+
+def token_exp_datetime(payload: dict) -> datetime:
+    exp = payload.get("exp")
+    if not isinstance(exp, int):
+        raise jwt.InvalidTokenError("Invalid token exp.")
+    return datetime.fromtimestamp(exp, tz=timezone.utc)
 
 
 def get_user_by_username(db: Session, username: str) -> Optional[User]:

@@ -100,4 +100,21 @@ describe("authStore", () => {
       expect(useAuthStore.getState().userId).toBeNull();
     });
   });
+
+  describe("setToken", () => {
+    it("setToken persists only token without clobbering username/userId", () => {
+      useAuthStore.getState().login("t1", "u", 1);
+
+      useAuthStore.getState().setToken("t2");
+
+      expect(useAuthStore.getState().token).toBe("t2");
+      expect(useAuthStore.getState().username).toBe("u");
+      expect(useAuthStore.getState().userId).toBe(1);
+      expect(JSON.parse(storage.get(TOKEN_KEY) ?? "{}")).toEqual({
+        token: "t2",
+        username: "u",
+        userId: 1,
+      });
+    });
+  });
 });

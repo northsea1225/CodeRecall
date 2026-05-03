@@ -3,6 +3,7 @@ import { Button, Layout, Menu, Spin } from "antd";
 import { useTranslation } from "react-i18next";
 import { createBrowserRouter, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 
+import * as authService from "./services/authService";
 import { useAuthStore } from "./stores/authStore";
 import { useUIStore } from "./stores/uiStore";
 import { routerBridge } from "./utils/routerBridge";
@@ -48,7 +49,6 @@ function AppLayout() {
   const toggleTheme = useUIStore((state) => state.toggleTheme);
   const toggleLanguage = useUIStore((state) => state.toggleLanguage);
   const username = useAuthStore((state) => state.username);
-  const logout = useAuthStore((state) => state.logout);
   const navigationItems = useMemo(
     () => [
       { key: "/dashboard", label: t("nav.dashboard") },
@@ -59,6 +59,14 @@ function AppLayout() {
     ],
     [t],
   );
+  const handleLogout = async () => {
+    const token = useAuthStore.getState().token;
+    if (token) {
+      await authService.logout(token);
+    }
+    useAuthStore.getState().logout();
+    navigate("/login", { replace: true });
+  };
 
   return (
     <Layout className="app-shell">
@@ -83,8 +91,7 @@ function AppLayout() {
             type="text"
             size="small"
             onClick={() => {
-              logout();
-              navigate("/login");
+              void handleLogout();
             }}
           >
             {t("auth.logout")}

@@ -27,7 +27,9 @@ This document covers the security posture of CodeRecall / 码错本 and serves a
 |----------|------------|-----------------|
 | `JWT_SECRET_KEY` | Non-default, ≥ 32 bytes random | `openssl rand -hex 32` |
 | `JWT_ALGORITHM` | `HS256` (default) | — |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | Set to acceptable TTL | Default 10080 (7 days); consider 1440 (1 day) for higher security |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Default 120 (2 hours, was 10080 pre-C-005) | Lower values reduce XSS exposure window; refresh endpoint keeps sessions alive |
+| `ACCESS_TOKEN_REFRESH_GRACE_SECONDS` | Default 120 | Leeway for `/auth/refresh` to tolerate clock skew (do not set > 600) |
+| `TOKEN_BLACKLIST_CLEANUP_INTERVAL_SECONDS` | Default 600 | Throttled lazy cleanup of expired blacklist rows |
 | `OLD_USER_INITIAL_PASSWORD` | Non-default, strong | Must be changed after first login |
 | `APP_ENV` | `production` | Set explicitly in deployment |
 | `FRONTEND_ORIGIN` | Your actual frontend origin | No trailing slash, no wildcard |
@@ -38,9 +40,38 @@ This document covers the security posture of CodeRecall / 码错本 and serves a
 - [ ] `JWT_SECRET_KEY` is set to a randomly generated value (not the default `change-me-in-production`)
 - [ ] `APP_ENV=production` is set — this triggers the backend fail-fast check on startup
 - [ ] Token TTL (`ACCESS_TOKEN_EXPIRE_MINUTES`) is reviewed and set appropriately
-- [ ] Tokens are stored in `localStorage` on the frontend — understand the XSS exposure (see known issues t2 in CLAUDE.md)
+- [ ] Tokens are stored in `localStorage` on the frontend — XSS exposure window is **2h** after C-005 Part 1 (was 7d); Part 2 will move to HttpOnly Cookie + CSRF
+- [ ] Logout calls `POST /auth/logout` to revoke the token's `jti` server-side; `get_current_user` rejects requests with revoked jti
+- [ ] Silent refresh uses an isolated axios instance (no interceptor recursion); single-flight + 0-60s jitter prevents refresh thundering herd
 - [ ] HTTPS is used in production — tokens in transit must be encrypted
 - [ ] Frontend logout clears token from localStorage and redirects to `/login`
+
+## Token Revocation (C-005 Part 1)
+
+Implemented 2026-05-03 to address attack chain risk from `localStorage`-stored 7-day JWTs.
+
+**Mechanism**:
+- Every issued JWT includes a unique `jti` (uuid4 hex) claim
+- `POST /api/v1/auth/logout` writes the current token's `jti` into `token_jti_blacklist` (alembic migration `0011`)
+- `get_current_user` rejects any request whose `jti` is on the blacklist (returns 401 `token_revoked`)
+- Logout endpoint also throttle-triggers cleanup of expired blacklist rows (every 600s)
+
+**Refresh path**:
+- `POST /api/v1/auth/refresh` accepts the current Bearer token, validates signature + grace-window expiry + blacklist, then issues a new token with a fresh `jti`
+- **Old `jti` is intentionally NOT revoked** during a normal refresh — preserves multi-tab usability; only logout writes the blacklist
+- Rate limit: `120/minute;1000/hour` (NAT/multi-tab tolerant; unlike login's `10/minute` since refresh has no bcrypt cost)
+
+**Frontend silent refresh**:
+- Request interceptor pre-emptively refreshes when token has < 5 minutes left (with 0-60s jitter to avoid thundering herd at deployment time)
+- Response interceptor catches 401 and single-flights one refresh + retries the original request once
+- Concurrent requests share the same in-flight refresh promise
+
+**Cross-tab logout sync**:
+- `authStore` listens for the `storage` event; when another tab removes `coderecall_token`, this tab also clears state and routes to `/login`
+
+**Known limitation (Part 2 will fix)**:
+- Tokens still live in `localStorage`, exposed to XSS (now reduced to 2h max)
+- No HttpOnly Cookie / CSRF yet — planned in C-005 Part 2 (12h, depends on this Part 1 + I-006 e2e harness)
 
 ## Default / Legacy User Checklist
 

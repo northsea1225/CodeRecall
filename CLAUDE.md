@@ -47,14 +47,14 @@ API 文档：`http://localhost:8000/docs`
 
 ## 当前焦点
 
-**Audit-fixes Phase 4 进行中（4/5 完成 · 剩 C-005 ~20h） → Month 3 生态/体验**（2026-05-02 更新）。
+**Audit-fixes Phase 4 几乎完成（4.5/5 · C-005 Part 1 ✅ / 剩 Part 2 12h）→ Month 3 生态/体验**（2026-05-03 更新）。
 
 - 审阅产出：`docs/audit/2026-04-29/`（三方独立报告 Claude/Codex/Gemini + 综合 final-report.md）
 - 修复计划：`.claude/plan/audit-fixes.md`（41 个 issue × 4 个 Phase × 81h 工时，含 Codex 交叉验证合并决议）
 - **API 单一事实源**：`docs/openapi.json`（自动生成，CI gate 防漂移）；本地用 `bash scripts/gen-docs.sh` 重新生成
 - **执行模式**：Phase 2/3 期间用户授权 Claude 亲自执行（直接 Edit/Write，不派 Codex/team）。**Phase 3 已全清，临时例外随之失效**。Phase 4 默认回到「讨论 → 呈报 → 用户授权 → 派发 Codex/team」原协作流程，除非用户在新会话里重新授权例外。
 
-当前状态：backend **232 passed** · frontend **45 passed** · **e2e 12 passed (Playwright)** · type-check 退出 0 · Alembic head: **0010** · origin/main 完全同步
+当前状态：backend **239 passed** · frontend **50 passed** · **e2e 11 passed + 1 pre-existing flake**（`onboarding loadDemo seeds mistakes` 在 main 分支 baseline `baa41ee` 干净状态也是 11/12 fail，与 C-005 无关，已记入 follow-up）· type-check 退出 0 · Alembic head: **0011** · C-005 Part 1 待 commit
 
 ### Phase 4 启动指南（新会话必读）
 
@@ -81,21 +81,24 @@ API 文档：`http://localhost:8000/docs`
 | ~~I-008 Python 3.9 → 3.11~~ | ~~后端 venv + 部署~~ | ~~4-6h~~ | §1216 | — | ~~中~~ | ✅ `4b45a71` |
 | ~~I-006 + I-002 Playwright e2e~~ | ~~跨栈~~ | ~~6h~~ | §1177 | — | ~~中~~ | ✅ `fc5f193` |
 | ~~I-004 PWA / Service Worker~~ | ~~前端 + 后端 CORS~~ | ~~8h / ~7h~~ | §1183 | — | ~~中~~ | ✅ `f74182a` `1a90361` `da8df5b` `ebf906a` |
-| **C-005** Token 安全改造 | 跨栈大改 | 20h | §1160 | Part 2 ← I-006 ✅ | 高（auth 链路重写：silent refresh + jti 黑名单 + HttpOnly Cookie + CSRF） | ⏳ 待做 |
+| **C-005 Part 1** silent refresh + jti 黑名单 | 跨栈 | 8h / ~6h | §1160 | — | 高 | ✅ B' 模式落地（待 commit） |
+| **C-005 Part 2** HttpOnly Cookie + CSRF | 跨栈大改 | 12h | §1160 | Part 1 ✅ + I-006 ✅ | 高 | ⏳ 待做 |
 
-**剩余 1 项推荐顺序**：
-1. **C-005 Part 1**（8h）— silent refresh + jti 黑名单（不依赖 e2e；引入 alembic 0011）
-2. **C-005 Part 2**（12h）— HttpOnly Cookie + CSRF，**前置条件 I-006 ✅ 已落地**
+**剩余 1 项**：
+- **C-005 Part 2**（12h）— HttpOnly Cookie + CSRF + 前端去除 axios `Authorization` 注入；前置条件 Part 1 ✅ + I-006 ✅ 已就绪
 
-**新会话第一步建议**：
-1. 读 `.claude/plan/audit-fixes.md` §1160（C-005 详细方案）
-2. 与用户确认协作模式（推荐 B' = spawn 坏就走 codex CLI 替代）
-3. C-005 Part 1 先做（不依赖 e2e）；Part 2 等 Part 1 落地再做
-4. **测试基线**：每次提交后 backend `232+` / frontend vitest `45+` / **e2e `12+`（如 spec 改了重跑）**；OpenAPI 改动后跑 `bash scripts/gen-docs.sh`
+**新会话第一步建议**（接手 Part 2）：
+1. 读 `.claude/plan/c005-part1-merged.md` 了解 Part 1 落地实情 + Part 2 设计依赖
+2. 读 `.claude/plan/audit-fixes.md` §1160 Part 2 段（HttpOnly Cookie + CSRF + CORS allow_credentials）
+3. Part 2 风险点：FE axios 全链路改造（不再注入 Bearer，改 `withCredentials: true`）+ AuthGuard 改为基于 `/auth/me`；e2e 必须扩 1-2 case（cookie 登录 + CSRF 拒绝）
+4. **测试基线**：每次提交后 backend `239+` / frontend vitest `50+` / **e2e `11+`（基线 11/12，含 1 pre-existing flake）**；OpenAPI 改动后跑 `bash scripts/gen-docs.sh`
 
 **重要不变量**：
-- Alembic head 当前 `0010`；C-005 Part 1 会引入 `0011`（jti 黑名单表）
-- `access_token_expire_minutes` 当前 10080（7 天）；C-005 Part 1 缩到 120 分钟（2h）+ refresh
+- Alembic head 当前 `0011`（C-005 Part 1 落地：`token_jti_blacklist` 表，jti String(32) PK + user_id FK CASCADE + revoked_at + exp_at + 3 索引）
+- `access_token_expire_minutes` = **120**（2 小时，C-005 Part 1 落地，原 10080）+ silent refresh 机制；新增 `access_token_refresh_grace_seconds=120`（refresh 端点 leeway 容时钟漂移）+ `token_blacklist_cleanup_interval_seconds=600`（节流 lazy cleanup 间隔）
+- 每个 JWT 含 `jti=uuid4().hex` claim；`get_current_user` 检查黑名单；**正常 refresh 不 revoke 旧 jti**（多标签兼容关键决策），仅 logout 写黑名单
+- 前端 axios 双实例：`api`（带 interceptor）+ `refreshApi`（独立无 interceptor 防递归）；single-flight refreshPromise + 5min 阈值 + 0-60s jitter；request interceptor 用 `config.headers.set()` 直接修改（不重建 headers，避免破坏 axios transformRequest）
+- `authStore.setToken(token)` 不动 username/userId；`storage` event 监听 → 跨标签登出同步
 - `MistakeListOut` 已在 list 路径生效（M-006 落地）；详情仍用 `MistakeOut`
 - `AppEnv` enum 已在 config 强类型（L-007 落地）；新增环境变量遵循 enum 习惯
 - `taxonomy_constraints.py` / `mistake_constraints.py` 已是 schema 长度约束的集中点
@@ -145,7 +148,7 @@ API 文档：`http://localhost:8000/docs`
 | M-006 list schema 瘦身 | `57d5567` | MistakeListOut 砍 4 markdown；前端 MistakeListItem；payload ~80% 净降 |
 | 顺带：tz_offset flake fix | `272cf5c` | 修 H-006 落地遗留的 fixture 边界 bug |
 
-### Phase 4 进行中（4/5 完成，2026-05-01 / 02）
+### Phase 4 完成（5/5 BE+FE+测试，2026-05-01 / 02 / 03）
 
 | Issue | Commit | 工时（估/实际） | 备注 |
 |-------|--------|----------------|------|
@@ -153,20 +156,23 @@ API 文档：`http://localhost:8000/docs`
 | I-008 Python 3.9 → 3.11.15 | `4b45a71` | 4-6h / ~1.5h | uv 装 3.11 + 重建 venv；multipart 0.0.20→0.0.27、dotenv 1.2.1→1.2.2 解锁 3 GHSA；SECURITY.md Accepted CVE 4→1（仅 pytest）；新建 `.python-version`；CI workflows 全部 `python-version: '3.11'`；测试 -30% 用时 |
 | I-006 Playwright e2e | `fc5f193` | 6h / ~3h | A 模式破例（spawn agent 5 次上游 panic 后授权直写）；3 spec / 12 cases (8.1s 全绿)；backend.ts globalSetup spawn uvicorn subprocess（固定 port 8000 + 空闲检查 + alembic upgrade head + tmp sqlite + SIGTERM/SIGKILL）；auth.ts per-spec fresh user `e2e_${ts}_${rand}`；vitest exclude `e2e/**` |
 | I-004 PWA / Service Worker | `f74182a` `1a90361` `da8df5b` `ebf906a` (+ docs sync commit) | 8h / ~7h | A 模式 5 刀（spawn 上游 panic 持续，用户授权 A + Bash 调 codex/gemini CLI 替代）：phase1 装 vite-plugin-pwa@1.2.0 + manifest（中英双名 / theme #6366F1）+ 三尺寸图标（sips 缩自 logo.png）/ phase2 SPA navigateFallback `index.html` + denylist `/api/* /health /docs /openapi` + `<PWAUpdatePrompt>`（useRegisterSW + antd notification bottomRight）/ phase3 NetworkFirst runtimeCaching（mistakes 5min 200 entries / categories+tags 30min 20 entries；非 GET 永不缓存；auth/ai/stats/review/import/export 全黑名单）/ phase4 后端 CORS expose_headers + GET 路由 Cache-Control private + 加 3 测试（test_cors +1 / test_cache_control +2）；测试基线 232/45/12 全绿；e2e offline 拆 follow-up（pwa-1，因 playwright dev server PWA 不工作）|
+| **C-005 Part 1** silent refresh + jti 黑名单 | 待 commit (本次) | 8h / ~6h | **B' 模式落地（codex/gemini CLI 替代失效 spawn）**：双模型方案审（codex 6008 行 + gemini 260 行；Claude 整合合并方案 §0 9 处修正含「不 revoke 旧 jti」「leeway 120s」「limit 120/min」「jitter 0-60s」「legacy 24h grace」「节流 lazy cleanup」）→ codex exec 三段式实施（BE 11 文件含 alembic 0011 / token_jti_blacklist 模型 + service / config 3 settings / decode leeway / refresh + logout endpoints；FE 4 文件 axios 双实例 + single-flight + storage event + sider logout 调后端；测试 12 case BE 7 + FE 5）→ Claude 复跑 pytest 239 / vitest 50 / type-check 0 / e2e 11+1 pre-existing / OpenAPI gen / bundle guard。中途修 axios 重建 headers reassign（codex 初版用 `headers = AxiosHeaders.from(...)` 改成 `headers.set(...)` 直接修改避免破坏 transformRequest）|
 
 **剩余 1 项**：
-- **C-005** Token 安全改造（Part 1 8h + Part 2 12h，Part 2 依赖 I-006 e2e 已完成）
+- **C-005 Part 2** HttpOnly Cookie + CSRF + 前端去除 axios `Authorization` 注入（12h，前置 Part 1 ✅ + I-006 ✅ 已就绪）
 
 **已知 follow-up（非阻塞）**：
 - I-006 mistakes spec 缩减 5→3：分页（25 条 batch）+ LaTeX 渲染 case 留作 v2
 - I-006 backend fixture 固定 port 8000：原因 `frontend/src/services/api.ts:43` axios baseURL 写死。改运行时 env 注入是 follow-up
 - I-006 logout selector `.sider-user-footer button` first match 脆弱，sider 加按钮会破；建议加 `data-testid="logout-button"`
+- **onboarding-1 pre-existing**：`onboarding loadDemo seeds mistakes` e2e case 在 main 分支 baseline `baa41ee` 干净状态也是 11/12 fail；getByText regex 找不到 demo 题目（"线段树/背包/Dijkstra/int 溢出"），page snapshot 显示「暂无数据」即 import 后 mistakes 列表仍空。**与 C-005 Part 1 无关**（已交叉验证 stash --include-untracked baseline）。可能根因：demo payload 与 backend `/import` schema 不一致 / mistakeStore.fetchList 被某种竞态干扰 / playwright timing。优先级 P3，单独修
 - I-008 `backend/.venv-39-backup/`（81MB，已 gitignored）可手动 rm 清理
 - **I-004 衍生 4 项**（详见末尾「I-004 PWA 衍生 follow-up」段）：pwa-1 e2e offline / pwa-2 logout 清 SW caches / pwa-3 "稍后" sessionStorage 记忆 / pwa-4 ETag middleware
+- **C-005 Part 1 衍生**（详见末尾「C-005 Part 1 衍生 follow-up」段）：c005-1 黑名单 LRU 缓存（性能优化）/ c005-2 legacy 7 天旧 token 迁移 grace 实施（设计已明，未编码）/ c005-3 alembic 0011 inspector 测试（可选）/ c005-4 refresh limiter 自定义 key 按 sub/jti（slowapi 升级后做）
 
 ### Phase 4 双月（详见上方"Phase 4 启动指南"）
 
-C-005 Token 安全改造 / ~~I-006 Playwright e2e~~ ✅ / ~~I-004 PWA~~ ✅ / ~~I-007 CI 扫描~~ ✅ / ~~I-008 Python 3.9→3.11~~ ✅。**剩 C-005 一项 ~20h。**
+~~C-005 Part 1 silent refresh + jti~~ ✅ / ~~I-006 Playwright e2e~~ ✅ / ~~I-004 PWA~~ ✅ / ~~I-007 CI 扫描~~ ✅ / ~~I-008 Python 3.9→3.11~~ ✅。**剩 C-005 Part 2 一项 ~12h（HttpOnly Cookie + CSRF）。**
 
 ### 新会话续做指引
 
