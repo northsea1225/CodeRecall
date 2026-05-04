@@ -33,12 +33,12 @@ app.add_middleware(
     allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allow_headers=["Authorization", "Content-Type", "Accept"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-CSRF-Token"],
     # Expose ETag + Cache-Control to the SW / browser fetch layer so the PWA
     # (I-004) can read them. ETag generation is not yet wired (it would need a
     # FastAPI middleware), but exposing the header now means we don't have to
     # touch CORS again when ETag lands.
-    expose_headers=["ETag", "Cache-Control"],
+    expose_headers=["ETag", "Cache-Control", "X-CSRF-Token"],
     max_age=3600,
 )
 

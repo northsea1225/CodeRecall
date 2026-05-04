@@ -36,7 +36,7 @@ def hash_password(plain: str) -> str:
     return pwd_context.hash(plain)
 
 
-def create_access_token(user_id: int, username: str) -> str:
+def create_access_token(user_id: int, username: str, csrf: Optional[str] = None) -> str:
     now = datetime.now(timezone.utc)
     expires_at = now + timedelta(minutes=settings.access_token_expire_minutes)
     payload = {
@@ -47,6 +47,8 @@ def create_access_token(user_id: int, username: str) -> str:
         "exp": int(expires_at.timestamp()),
         "jti": uuid.uuid4().hex,
     }
+    if csrf is not None:
+        payload["csrf"] = csrf
     return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
 
 

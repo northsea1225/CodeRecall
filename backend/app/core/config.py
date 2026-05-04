@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 from enum import Enum
 from functools import lru_cache
 from pathlib import Path
@@ -9,6 +10,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
 logger = logging.getLogger(__name__)
+_bearer_compat_deadline_missing_warned = False
 
 _DEFAULT_JWT_SECRET = "change-me-in-production"
 _INSECURE_JWT_SECRETS = {
@@ -52,6 +54,9 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = Field(default=120, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
     access_token_refresh_grace_seconds: int = Field(default=120, alias="ACCESS_TOKEN_REFRESH_GRACE_SECONDS")
     token_blacklist_cleanup_interval_seconds: int = Field(default=600, alias="TOKEN_BLACKLIST_CLEANUP_INTERVAL_SECONDS")
+    bearer_compat_window_seconds: int = Field(default=86400, alias="BEARER_COMPAT_WINDOW_SECONDS")
+    bearer_compat_deadline_iso: str = Field(default="", alias="BEARER_COMPAT_DEADLINE_ISO")
+    cookie_secure_override: Optional[bool] = Field(default=None, alias="COOKIE_SECURE")
     old_user_initial_password: str = Field(default="", alias="OLD_USER_INITIAL_PASSWORD")
     rate_limit_enabled: bool = Field(default=True, alias="RATE_LIMIT_ENABLED")
 
@@ -72,6 +77,28 @@ class Settings(BaseSettings):
             if "localhost" in origin:
                 expanded.add(origin.replace("localhost", "127.0.0.1"))
         return sorted(expanded)
+
+    @property
+    def cookie_secure(self) -> bool:
+        if self.cookie_secure_override is not None:
+            return self.cookie_secure_override
+        return self.app_env in (AppEnv.PRODUCTION, AppEnv.STAGING)
+
+    @property
+    def bearer_compat_active(self) -> bool:
+        """Whether to accept Bearer tokens. False after the configured deadline."""
+        global _bearer_compat_deadline_missing_warned
+        if not self.bearer_compat_deadline_iso:
+            if not _bearer_compat_deadline_missing_warned:
+                logger.warning("BEARER_COMPAT_DEADLINE_ISO is unset; falling back to compat=on")
+                _bearer_compat_deadline_missing_warned = True
+            return True
+        try:
+            deadline = datetime.fromisoformat(self.bearer_compat_deadline_iso.replace("Z", "+00:00"))
+            return datetime.now(timezone.utc) < deadline
+        except ValueError:
+            logger.warning("Invalid BEARER_COMPAT_DEADLINE_ISO; falling back to compat=on")
+            return True
 
     @property
     def sqlite_database_path(self) -> Optional[Path]:
