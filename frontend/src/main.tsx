@@ -9,6 +9,6 @@ import { useAuthStore } from "./stores/authStore";
 import "./styles/global.css";
 import "./stores/mistakeStore";
 
-useAuthStore.getState().initializeAuth();
+void useAuthStore.getState().initializeAuth();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(<App />);

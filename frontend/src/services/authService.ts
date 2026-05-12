@@ -5,6 +5,7 @@ export interface AuthResponse {
   token_type: string;
   username: string;
   user_id: number;
+  token_exp_at: string;
 }
 
 export const login = async (username: string, password: string): Promise<AuthResponse> => {
@@ -27,19 +28,13 @@ export const getMe = async () => {
   return response.data;
 };
 
-export async function refreshToken(currentToken: string): Promise<AuthResponse> {
-  const { data } = await refreshApi.post<AuthResponse>("/auth/refresh", null, {
-    headers: { Authorization: `Bearer ${currentToken}` },
-  });
+export async function refreshToken(): Promise<AuthResponse> {
+  const { data } = await refreshApi.post<AuthResponse>("/auth/refresh", null);
   return data;
 }
 
-export async function logout(token: string): Promise<void> {
-  await refreshApi
-    .post("/auth/logout", null, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    .catch(() => {
-      // Backend logout failures must not block local logout.
-    });
+export async function logout(): Promise<void> {
+  await refreshApi.post("/auth/logout", null).catch(() => {
+    // Backend logout failures must not block local logout.
+  });
 }

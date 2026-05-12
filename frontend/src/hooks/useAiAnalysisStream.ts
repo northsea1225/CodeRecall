@@ -19,16 +19,6 @@ const readySnapshot: StreamSnapshot = {
   content: "",
   error: null,
 };
-const TOKEN_KEY = "coderecall_token";
-
-function getBearerToken(): string {
-  try {
-    const raw = localStorage.getItem(TOKEN_KEY);
-    return raw ? ((JSON.parse(raw) as { token?: string }).token ?? "") : "";
-  } catch {
-    return "";
-  }
-}
 
 // Pure type guard for HTTP error response bodies. Accepts the
 // `unknown` returned by `response.json()` and pulls out the first
@@ -71,7 +61,7 @@ export function useAiAnalysisStream() {
       let response: Response;
       try {
         response = await fetch(`${apiBaseURL}/ai/analyze/stream?${params.toString()}`, {
-          headers: { Authorization: `Bearer ${getBearerToken()}` },
+          credentials: "include",
           signal: ctrl.signal,
         });
       } catch (err) {

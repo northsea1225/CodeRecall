@@ -7,6 +7,7 @@ import * as authService from "./services/authService";
 import { useAuthStore } from "./stores/authStore";
 import { useUIStore } from "./stores/uiStore";
 import { routerBridge } from "./utils/routerBridge";
+import { useEffect } from "react";
 
 const DashboardPage = lazy(() => import("./pages/Dashboard"));
 const ImportExportPage = lazy(() => import("./pages/ImportExport"));
@@ -60,10 +61,7 @@ function AppLayout() {
     [t],
   );
   const handleLogout = async () => {
-    const token = useAuthStore.getState().token;
-    if (token) {
-      await authService.logout(token);
-    }
+    await authService.logout();
     useAuthStore.getState().logout();
     navigate("/login", { replace: true });
   };
@@ -132,8 +130,15 @@ function AppLayout() {
 }
 
 function AuthGuard() {
-  const token = useAuthStore((state) => state.token);
-  return token ? <Outlet /> : <Navigate to="/login" replace />;
+  const username = useAuthStore((state) => state.username);
+  const initialized = useAuthStore((state) => state.initialized);
+  useEffect(() => {
+    if (!initialized) {
+      void useAuthStore.getState().initializeAuth();
+    }
+  }, [initialized]);
+  if (!initialized) return <PageFallback />;
+  return username !== null ? <Outlet /> : <Navigate to="/login" replace />;
 }
 
 export const router = createBrowserRouter([

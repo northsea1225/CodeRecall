@@ -2,6 +2,9 @@ import { defineConfig, devices } from "@playwright/test";
 
 const isCI = !!process.env.CI;
 
+const E2E_BACKEND_PORT = Number(process.env.E2E_BACKEND_PORT ?? 18000);
+const E2E_API_BASE_URL = `http://localhost:${E2E_BACKEND_PORT}/api/v1`;
+
 export default defineConfig({
   testDir: "./e2e",
   testMatch: "**/*.spec.ts",
@@ -35,6 +38,9 @@ export default defineConfig({
     timeout: 120_000,
     stdout: "ignore",
     stderr: "pipe",
+    env: {
+      VITE_API_BASE_URL: E2E_API_BASE_URL,
+    },
   },
 
   projects: [

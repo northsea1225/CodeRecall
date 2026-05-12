@@ -109,7 +109,7 @@ export const createMistakeStore = (
 export const mistakeStore = createMistakeStore();
 
 useAuthStore.subscribe((state, prevState) => {
-  if (prevState.token && !state.token) {
+  if (prevState.username && !state.username) {
     mistakeStore.getState().reset();
   }
 });

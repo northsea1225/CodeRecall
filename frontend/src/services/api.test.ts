@@ -6,16 +6,6 @@ import { useAuthStore } from "../stores/authStore";
 import { routerBridge } from "../utils/routerBridge";
 import { api, ApiClientError, extractApiErrorMessage, refreshApi } from "./api";
 
-function base64UrlEncode(input: string): string {
-  return btoa(input).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-function makeJwt(payload: Record<string, unknown>): string {
-  const header = base64UrlEncode(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const body = base64UrlEncode(JSON.stringify(payload));
-  return `${header}.${body}.signature`;
-}
-
 function makeResponse<T>(
   config: InternalAxiosRequestConfig,
   data: T,
@@ -68,95 +58,32 @@ describe("extractApiErrorMessage", () => {
   });
 });
 
-describe("api 401 interceptor", () => {
-  let logoutSpy: ReturnType<typeof vi.spyOn>;
-  let navigateSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    logoutSpy = vi.spyOn(useAuthStore.getState(), "logout").mockImplementation(() => {});
-    navigateSpy = vi.spyOn(routerBridge, "navigate").mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    logoutSpy.mockRestore();
-    navigateSpy.mockRestore();
-  });
-
-  it("logs out and synchronously navigates to /login on 401", async () => {
-    const error = new AxiosError(
-      "Unauthorized",
-      undefined,
-      { headers: new AxiosHeaders() } as never,
-      undefined,
-      {
-        data: { code: "auth_required", message: "Token expired.", detail: {} },
-        status: 401,
-        statusText: "Unauthorized",
-        headers: {},
-        config: { headers: new AxiosHeaders() } as never,
-      },
-    );
-
-    const handlers = (api.interceptors.response as unknown as {
-      handlers: Array<{ rejected?: (e: unknown) => unknown } | null>;
-    }).handlers.filter(Boolean);
-    expect(handlers.length).toBeGreaterThan(0);
-    const rejectedHandler = handlers[0]!.rejected!;
-
-    await expect(rejectedHandler(error)).rejects.toBeInstanceOf(ApiClientError);
-
-    expect(logoutSpy).toHaveBeenCalledOnce();
-    expect(navigateSpy).toHaveBeenCalledWith("/login", { replace: true });
-  });
-
-  it("does not navigate or logout on non-401 errors", async () => {
-    const error = new AxiosError(
-      "Server Error",
-      undefined,
-      { headers: new AxiosHeaders() } as never,
-      undefined,
-      {
-        data: { code: "internal_error", message: "boom", detail: {} },
-        status: 500,
-        statusText: "Server Error",
-        headers: {},
-        config: { headers: new AxiosHeaders() } as never,
-      },
-    );
-
-    const handlers = (api.interceptors.response as unknown as {
-      handlers: Array<{ rejected?: (e: unknown) => unknown } | null>;
-    }).handlers.filter(Boolean);
-    const rejectedHandler = handlers[0]!.rejected!;
-
-    await expect(rejectedHandler(error)).rejects.toBeInstanceOf(ApiClientError);
-
-    expect(logoutSpy).not.toHaveBeenCalled();
-    expect(navigateSpy).not.toHaveBeenCalled();
-  });
-});
-
-describe("api token refresh lifecycle", () => {
-  const storage = new Map<string, string>();
+describe("api token refresh lifecycle (cookie mode)", () => {
   const originalApiAdapter = api.defaults.adapter;
   const originalRefreshAdapter = refreshApi.defaults.adapter;
-  let setTokenSpy: ReturnType<typeof vi.spyOn>;
+  const storage = new Map<string, string>();
+  let setSessionSpy: ReturnType<typeof vi.spyOn>;
   let logoutSpy: ReturnType<typeof vi.spyOn>;
   let navigateSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    storage.clear();
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-05-02T00:00:00.000Z"));
+    vi.setSystemTime(new Date("2026-05-04T00:00:00.000Z"));
     vi.spyOn(Math, "random").mockReturnValue(0);
+    storage.clear();
     vi.stubGlobal("localStorage", {
       clear: () => storage.clear(),
       getItem: (key: string) => storage.get(key) ?? null,
       removeItem: (key: string) => storage.delete(key),
       setItem: (key: string, value: string) => storage.set(key, value),
     });
-    useAuthStore.setState({ token: null, username: null, userId: null });
-    setTokenSpy = vi.spyOn(useAuthStore.getState(), "setToken");
+    useAuthStore.setState({
+      username: null,
+      userId: null,
+      tokenExpAt: null,
+      initialized: true,
+    });
+    setSessionSpy = vi.spyOn(useAuthStore.getState(), "setSession");
     logoutSpy = vi.spyOn(useAuthStore.getState(), "logout").mockImplementation(() => {});
     navigateSpy = vi.spyOn(routerBridge, "navigate").mockImplementation(() => {});
   });
@@ -164,58 +91,63 @@ describe("api token refresh lifecycle", () => {
   afterEach(() => {
     api.defaults.adapter = originalApiAdapter;
     refreshApi.defaults.adapter = originalRefreshAdapter;
-    useAuthStore.setState({ token: null, username: null, userId: null });
+    useAuthStore.setState({
+      username: null,
+      userId: null,
+      tokenExpAt: null,
+      initialized: false,
+    });
     routerBridge.reset();
     vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
-  it("refreshes silently before sending request when token expires within five minutes", async () => {
-    const oldToken = makeJwt({ exp: Math.floor(Date.now() / 1000) + 60 });
-    const newToken = makeJwt({ exp: Math.floor(Date.now() / 1000) + 7200 });
-    useAuthStore.setState({ token: oldToken, username: "alice", userId: 1 });
+  it("refreshes silently before sending request when tokenExpAt is within five minutes", async () => {
+    const newExpIso = new Date(Date.now() + 7200_000).toISOString();
+    useAuthStore.setState({
+      username: "alice",
+      userId: 1,
+      tokenExpAt: Date.now() + 60_000, // 1 min remaining, below 5min threshold
+      initialized: true,
+    });
 
     const refreshAdapter = vi.fn<AxiosAdapter>(async (config) =>
       makeResponse(config, {
-        access_token: newToken,
+        access_token: "ignored",
         token_type: "bearer",
         username: "alice",
         user_id: 1,
+        token_exp_at: newExpIso,
       }),
     );
-    const originalRequests: InternalAxiosRequestConfig[] = [];
-    const apiAdapter = vi.fn<AxiosAdapter>(async (config) => {
-      originalRequests.push(config);
-      return makeResponse(config, { ok: true });
-    });
+    const apiAdapter = vi.fn<AxiosAdapter>(async (config) => makeResponse(config, { ok: true }));
     refreshApi.defaults.adapter = refreshAdapter;
     api.defaults.adapter = apiAdapter;
 
     await api.get("/some-route");
 
     expect(refreshAdapter).toHaveBeenCalledOnce();
-    expect(AxiosHeaders.from(originalRequests[0].headers).get("Authorization")).toBe(
-      `Bearer ${newToken}`,
-    );
-    expect(setTokenSpy).toHaveBeenCalledWith(newToken);
+    expect(setSessionSpy).toHaveBeenCalledWith({
+      tokenExpAt: new Date(newExpIso).getTime(),
+    });
   });
 
   it("shares one refresh request across concurrent authenticated requests", async () => {
-    const oldToken = makeJwt({ exp: Math.floor(Date.now() / 1000) + 60 });
-    const newToken = makeJwt({ exp: Math.floor(Date.now() / 1000) + 7200 });
-    useAuthStore.setState({ token: oldToken, username: "alice", userId: 1 });
+    const newExpIso = new Date(Date.now() + 7200_000).toISOString();
+    useAuthStore.setState({
+      username: "alice",
+      userId: 1,
+      tokenExpAt: Date.now() + 60_000,
+      initialized: true,
+    });
 
     let resolveRefresh!: (response: AxiosResponse) => void;
     const refreshResponse = new Promise<AxiosResponse>((resolve) => {
       resolveRefresh = resolve;
     });
     const refreshAdapter = vi.fn<AxiosAdapter>(() => refreshResponse);
-    const originalRequests: InternalAxiosRequestConfig[] = [];
-    const apiAdapter = vi.fn<AxiosAdapter>(async (config) => {
-      originalRequests.push(config);
-      return makeResponse(config, { ok: true });
-    });
+    const apiAdapter = vi.fn<AxiosAdapter>(async (config) => makeResponse(config, { ok: true }));
     refreshApi.defaults.adapter = refreshAdapter;
     api.defaults.adapter = apiAdapter;
 
@@ -230,26 +162,25 @@ describe("api token refresh lifecycle", () => {
 
     resolveRefresh(
       makeResponse({ headers: new AxiosHeaders() } as InternalAxiosRequestConfig, {
-        access_token: newToken,
+        access_token: "ignored",
         token_type: "bearer",
         username: "alice",
         user_id: 1,
+        token_exp_at: newExpIso,
       }),
     );
     await requests;
 
     expect(apiAdapter).toHaveBeenCalledTimes(3);
-    expect(
-      originalRequests.every(
-        (config) =>
-          AxiosHeaders.from(config.headers).get("Authorization") === `Bearer ${newToken}`,
-      ),
-    ).toBe(true);
   });
 
   it("logs out and navigates when refresh fails", async () => {
-    const oldToken = makeJwt({ exp: Math.floor(Date.now() / 1000) + 7200 });
-    useAuthStore.setState({ token: oldToken, username: "alice", userId: 1 });
+    useAuthStore.setState({
+      username: "alice",
+      userId: 1,
+      tokenExpAt: Date.now() + 7200_000,
+      initialized: true,
+    });
     const refreshAdapter = vi.fn<AxiosAdapter>((config) =>
       Promise.reject(makeAxiosError(config, 401, "token_expired")),
     );
@@ -267,15 +198,20 @@ describe("api token refresh lifecycle", () => {
   });
 
   it("retries original request once after 401 refresh succeeds", async () => {
-    const oldToken = makeJwt({ exp: Math.floor(Date.now() / 1000) + 7200 });
-    const newToken = makeJwt({ exp: Math.floor(Date.now() / 1000) + 7300 });
-    useAuthStore.setState({ token: oldToken, username: "alice", userId: 1 });
+    const newExpIso = new Date(Date.now() + 7200_000).toISOString();
+    useAuthStore.setState({
+      username: "alice",
+      userId: 1,
+      tokenExpAt: Date.now() + 7200_000,
+      initialized: true,
+    });
     const refreshAdapter = vi.fn<AxiosAdapter>(async (config) =>
       makeResponse(config, {
-        access_token: newToken,
+        access_token: "ignored",
         token_type: "bearer",
         username: "alice",
         user_id: 1,
+        token_exp_at: newExpIso,
       }),
     );
     const originalRequests: InternalAxiosRequestConfig[] = [];
@@ -295,9 +231,6 @@ describe("api token refresh lifecycle", () => {
     expect(response.data).toEqual({ ok: true });
     expect(apiAdapter).toHaveBeenCalledTimes(2);
     expect(refreshAdapter).toHaveBeenCalledOnce();
-    expect(AxiosHeaders.from(originalRequests[1].headers).get("Authorization")).toBe(
-      `Bearer ${newToken}`,
-    );
   });
 });
 

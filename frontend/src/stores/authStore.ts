@@ -4,74 +4,142 @@ import { draftStore } from "./draftStore";
 import { reviewStore } from "./reviewStore";
 
 interface AuthState {
-  token: string | null;
   username: string | null;
   userId: number | null;
-  login: (token: string, username: string, userId: number) => void;
-  setToken: (token: string) => void;
+  tokenExpAt: number | null;
+  initialized: boolean;
+  setSession: (s: {
+    username?: string | null;
+    userId?: number | null;
+    tokenExpAt?: number | null;
+  }) => void;
   logout: () => void;
-  initializeAuth: () => void;
+  initializeAuth: () => Promise<void>;
 }
 
-const TOKEN_KEY = "coderecall_token";
+const SESSION_KEY = "coderecall_session";
+const LEGACY_TOKEN_KEY = "coderecall_token";
+const API_BASE =
+  (import.meta as ImportMeta & { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL ??
+  "http://localhost:8000/api/v1";
+
+interface MeResponse {
+  id: number;
+  username: string;
+  token_exp_at?: string | null;
+}
+
+async function fetchMe(authHeader?: string): Promise<MeResponse | null> {
+  try {
+    const headers: Record<string, string> = {};
+    if (authHeader) headers["Authorization"] = authHeader;
+    const res = await fetch(`${API_BASE}/auth/me`, {
+      credentials: "include",
+      headers,
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as MeResponse;
+  } catch {
+    return null;
+  }
+}
+
+function persistSession(state: {
+  username: string | null;
+  userId: number | null;
+  tokenExpAt: number | null;
+}): void {
+  if (state.username !== null || state.userId !== null) {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(state));
+  } else {
+    localStorage.removeItem(SESSION_KEY);
+  }
+}
 
 export const useAuthStore = create<AuthState>((set) => ({
-  token: null,
   username: null,
   userId: null,
-  login: (token, username, userId) => {
-    localStorage.setItem(TOKEN_KEY, JSON.stringify({ token, username, userId }));
-    set({ token, username, userId });
-  },
-  setToken: (token) => {
-    const { username, userId } = useAuthStore.getState();
-    if (username === null || userId === null) return;
-    localStorage.setItem(TOKEN_KEY, JSON.stringify({ token, username, userId }));
-    set({ token });
+  tokenExpAt: null,
+  initialized: false,
+  setSession: (s) => {
+    set((prev) => {
+      const next = {
+        username: s.username !== undefined ? s.username : prev.username,
+        userId: s.userId !== undefined ? s.userId : prev.userId,
+        tokenExpAt: s.tokenExpAt !== undefined ? s.tokenExpAt : prev.tokenExpAt,
+      };
+      persistSession(next);
+      return { ...next, initialized: prev.initialized };
+    });
   },
   logout: () => {
     const userId = useAuthStore.getState().userId;
-    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
     if (userId !== null) {
       localStorage.removeItem(`coderecall_ever_imported_${userId}`);
     }
-    set({ token: null, username: null, userId: null });
+    set((prev) => ({
+      username: null,
+      userId: null,
+      tokenExpAt: null,
+      initialized: prev.initialized,
+    }));
     reviewStore.getState().reset();
     draftStore.getState().clearAll();
   },
-  initializeAuth: () => {
-    const raw = localStorage.getItem(TOKEN_KEY);
-    if (!raw) return;
-    try {
-      const parsed = JSON.parse(raw);
-      if (parsed?.token && parsed?.userId) {
-        const parts = parsed.token.split(".");
-        if (parts.length === 3) {
-          const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-          const padded = b64.padEnd(b64.length + ((4 - (b64.length % 4)) % 4), "=");
-          const { exp } = JSON.parse(atob(padded));
-          if (typeof exp === "number" && exp * 1000 > Date.now()) {
-            set({
-              token: typeof parsed.token === "string" ? parsed.token : null,
-              username: typeof parsed.username === "string" ? parsed.username : null,
-              userId: typeof parsed.userId === "number" ? parsed.userId : null,
+  initializeAuth: async () => {
+    // 1. Try cookie-based session
+    const me = await fetchMe();
+    if (me !== null) {
+      const expMs = me.token_exp_at ? new Date(me.token_exp_at).getTime() : null;
+      persistSession({ username: me.username, userId: me.id, tokenExpAt: expMs });
+      set({ username: me.username, userId: me.id, tokenExpAt: expMs, initialized: true });
+      localStorage.removeItem(LEGACY_TOKEN_KEY);
+      return;
+    }
+
+    // 2. Legacy migration: localStorage Bearer (24h compat window)
+    const legacyRaw = localStorage.getItem(LEGACY_TOKEN_KEY);
+    if (legacyRaw) {
+      try {
+        const parsed = JSON.parse(legacyRaw) as { token?: unknown };
+        if (typeof parsed.token === "string") {
+          const meLegacy = await fetchMe(`Bearer ${parsed.token}`);
+          if (meLegacy !== null) {
+            const expMs = meLegacy.token_exp_at ? new Date(meLegacy.token_exp_at).getTime() : null;
+            persistSession({
+              username: meLegacy.username,
+              userId: meLegacy.id,
+              tokenExpAt: expMs,
             });
+            set({
+              username: meLegacy.username,
+              userId: meLegacy.id,
+              tokenExpAt: expMs,
+              initialized: true,
+            });
+            localStorage.removeItem(LEGACY_TOKEN_KEY);
             return;
           }
         }
+      } catch {
+        /* swallow legacy parse error */
       }
-      localStorage.removeItem(TOKEN_KEY);
-    } catch {
-      localStorage.removeItem(TOKEN_KEY);
     }
+
+    // 3. No session
+    localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
+    set({ username: null, userId: null, tokenExpAt: null, initialized: true });
   },
 }));
 
 if (typeof window !== "undefined") {
   window.addEventListener("storage", (e) => {
-    if (e.key === TOKEN_KEY && e.newValue === null) {
+    if (e.key === SESSION_KEY && e.newValue === null) {
       const state = useAuthStore.getState();
-      if (state.token !== null) {
+      if (state.username !== null) {
         state.logout();
       }
     }

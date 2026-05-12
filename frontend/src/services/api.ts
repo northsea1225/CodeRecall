@@ -2,6 +2,7 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 import { useAuthStore } from "../stores/authStore";
 import { routerBridge } from "../utils/routerBridge";
+import { CSRF_HEADER, getCsrfTokenFromCookie } from "../utils/csrf";
 import type { AuthResponse } from "./authService";
 
 export interface ApiErrorPayload {
@@ -43,13 +44,8 @@ export const extractApiErrorMessage = (error: unknown): string => {
 
 export const apiBaseURL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
-export const api = axios.create({
-  baseURL: apiBaseURL,
-});
-
-export const refreshApi = axios.create({
-  baseURL: apiBaseURL,
-});
+export const api = axios.create({ baseURL: apiBaseURL, withCredentials: true });
+export const refreshApi = axios.create({ baseURL: apiBaseURL, withCredentials: true });
 
 interface RefreshableConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
@@ -58,39 +54,24 @@ interface RefreshableConfig extends InternalAxiosRequestConfig {
 
 const REFRESH_THRESHOLD_MS = 5 * 60 * 1000;
 const JITTER_MS = 60 * 1000;
+const MUTATION_METHODS = new Set(["post", "put", "patch", "delete"]);
 
-let refreshPromise: Promise<string> | null = null;
-
-function decodeJwtExpMs(token: string): number | null {
-  const parts = token.split(".");
-  if (parts.length !== 3) return null;
-
-  try {
-    const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const padded = b64.padEnd(b64.length + ((4 - (b64.length % 4)) % 4), "=");
-    const { exp } = JSON.parse(atob(padded)) as { exp?: unknown };
-    return typeof exp === "number" ? exp * 1000 : null;
-  } catch {
-    return null;
-  }
-}
+let refreshPromise: Promise<void> | null = null;
 
 function logoutAndRedirect(): void {
   useAuthStore.getState().logout();
   routerBridge.navigate("/login", { replace: true });
 }
 
-async function refreshTokenOnce(currentToken: string): Promise<string> {
+async function refreshTokenOnce(): Promise<void> {
   if (refreshPromise !== null) return refreshPromise;
 
   refreshPromise = refreshApi
-    .post<AuthResponse>("/auth/refresh", null, {
-      headers: { Authorization: `Bearer ${currentToken}` },
-    })
+    .post<AuthResponse>("/auth/refresh", null)
     .then((response) => {
-      const nextToken = response.data.access_token;
-      useAuthStore.getState().setToken(nextToken);
-      return nextToken;
+      const expIso = response.data?.token_exp_at;
+      const expMs = expIso ? new Date(expIso).getTime() : null;
+      useAuthStore.getState().setSession({ tokenExpAt: expMs });
     })
     .finally(() => {
       refreshPromise = null;
@@ -99,22 +80,31 @@ async function refreshTokenOnce(currentToken: string): Promise<string> {
   return refreshPromise;
 }
 
-async function ensureFreshToken(token: string): Promise<string> {
-  const expMs = decodeJwtExpMs(token);
-  if (expMs === null) return token;
+async function ensureFreshToken(): Promise<void> {
+  const { tokenExpAt } = useAuthStore.getState();
+  if (tokenExpAt === null) return;
 
   const jitter = Math.floor(Math.random() * JITTER_MS);
-  if (expMs - Date.now() > REFRESH_THRESHOLD_MS + jitter) return token;
+  if (tokenExpAt - Date.now() > REFRESH_THRESHOLD_MS + jitter) return;
 
-  return refreshTokenOnce(token);
+  await refreshTokenOnce();
 }
 
 api.interceptors.request.use(async (config) => {
-  const { token } = useAuthStore.getState();
-  if (!token || (config as RefreshableConfig).skipAuthRefresh) return config;
+  const requestConfig = config as RefreshableConfig;
+  if (requestConfig.skipAuthRefresh) return config;
 
-  const freshToken = await ensureFreshToken(token);
-  config.headers.set("Authorization", `Bearer ${freshToken}`);
+  const { username } = useAuthStore.getState();
+  if (username !== null) {
+    await ensureFreshToken();
+  }
+
+  if (MUTATION_METHODS.has((config.method ?? "get").toLowerCase())) {
+    const csrf = getCsrfTokenFromCookie();
+    if (csrf) {
+      config.headers.set(CSRF_HEADER, csrf);
+    }
+  }
   return config;
 });
 
@@ -123,17 +113,17 @@ api.interceptors.response.use(
   async (error: AxiosError<ApiErrorPayload>) => {
     const original = error.config as RefreshableConfig | undefined;
     if (error.response?.status === 401 && original && !original._retry && !original.skipAuthRefresh) {
-      const { token } = useAuthStore.getState();
-      if (token) {
-        try {
-          original._retry = true;
-          const freshToken = await refreshTokenOnce(token);
-          original.headers.set("Authorization", `Bearer ${freshToken}`);
-          return api.request(original);
-        } catch {
-          logoutAndRedirect();
+      try {
+        original._retry = true;
+        await refreshTokenOnce();
+        if (MUTATION_METHODS.has((original.method ?? "get").toLowerCase())) {
+          const csrf = getCsrfTokenFromCookie();
+          if (csrf) {
+            original.headers.set(CSRF_HEADER, csrf);
+          }
         }
-      } else {
+        return api.request(original);
+      } catch {
         logoutAndRedirect();
       }
     }

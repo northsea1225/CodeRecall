@@ -47,14 +47,14 @@ API 文档：`http://localhost:8000/docs`
 
 ## 当前焦点
 
-**Audit-fixes Phase 4 几乎完成（4.5/5 · C-005 Part 1 ✅ / 剩 Part 2 12h）→ Month 3 生态/体验**（2026-05-03 更新）。
+**Audit-fixes Phase 4 完成（5/5 · C-005 Part 1 ✅ / Part 2 BE+FE ✅，e2e 改造 follow-up）→ Month 3 生态/体验**（2026-05-04 更新）。
 
 - 审阅产出：`docs/audit/2026-04-29/`（三方独立报告 Claude/Codex/Gemini + 综合 final-report.md）
 - 修复计划：`.claude/plan/audit-fixes.md`（41 个 issue × 4 个 Phase × 81h 工时，含 Codex 交叉验证合并决议）
 - **API 单一事实源**：`docs/openapi.json`（自动生成，CI gate 防漂移）；本地用 `bash scripts/gen-docs.sh` 重新生成
 - **执行模式**：Phase 2/3 期间用户授权 Claude 亲自执行（直接 Edit/Write，不派 Codex/team）。**Phase 3 已全清，临时例外随之失效**。Phase 4 默认回到「讨论 → 呈报 → 用户授权 → 派发 Codex/team」原协作流程，除非用户在新会话里重新授权例外。
 
-当前状态：backend **239 passed** · frontend **50 passed** · **e2e 11 passed + 1 pre-existing flake**（`onboarding loadDemo seeds mistakes` 在 main 分支 baseline `baa41ee` 干净状态也是 11/12 fail，与 C-005 无关，已记入 follow-up）· type-check 退出 0 · Alembic head: **0011** · C-005 Part 1 待 commit
+当前状态：backend **245 passed** · frontend **49 passed** · **e2e 待验**（Part 2 改造后 vite reuseExistingServer cache 阻塞，端口冲突 grok2api，列为 c005-part2-2 follow-up）· type-check 退出 0 · Alembic head: **0011** · C-005 Part 2 PR #1 BE 已 push `304b01d` / PR #2 FE 待 commit
 
 ### Phase 4 启动指南（新会话必读）
 
@@ -81,24 +81,28 @@ API 文档：`http://localhost:8000/docs`
 | ~~I-008 Python 3.9 → 3.11~~ | ~~后端 venv + 部署~~ | ~~4-6h~~ | §1216 | — | ~~中~~ | ✅ `4b45a71` |
 | ~~I-006 + I-002 Playwright e2e~~ | ~~跨栈~~ | ~~6h~~ | §1177 | — | ~~中~~ | ✅ `fc5f193` |
 | ~~I-004 PWA / Service Worker~~ | ~~前端 + 后端 CORS~~ | ~~8h / ~7h~~ | §1183 | — | ~~中~~ | ✅ `f74182a` `1a90361` `da8df5b` `ebf906a` |
-| **C-005 Part 1** silent refresh + jti 黑名单 | 跨栈 | 8h / ~6h | §1160 | — | 高 | ✅ B' 模式落地（待 commit） |
-| **C-005 Part 2** HttpOnly Cookie + CSRF | 跨栈大改 | 12h | §1160 | Part 1 ✅ + I-006 ✅ | 高 | ⏳ 待做 |
+| **C-005 Part 1** silent refresh + jti 黑名单 | 跨栈 | 8h / ~6h | §1160 | — | 高 | ✅ `f09d9fa` |
+| **C-005 Part 2** HttpOnly Cookie + CSRF + Bearer 兼容期 | 跨栈大改 | 12h / ~10h | §1160 | Part 1 ✅ + I-006 ✅ | 高 | ✅ PR #1 BE `304b01d` / PR #2 FE 待 commit |
 
-**剩余 1 项**：
-- **C-005 Part 2**（12h）— HttpOnly Cookie + CSRF + 前端去除 axios `Authorization` 注入；前置条件 Part 1 ✅ + I-006 ✅ 已就绪
+**剩余 follow-up**：
+- **c005-part2-2 e2e 改造**：playwright config + fixture/auth.ts 改 cookie 注入（`context.addCookies` + setExtraHTTPHeaders X-CSRF-Token），加 2 case（cookie reload 持久 + CSRF 拒绝 mutation）。当前阻塞：vite `reuseExistingServer` cache 让 webServer env `VITE_API_BASE_URL` 注入对运行中 dev server 无效；待 vite 主动重启后可执行
+- **部署运维（push 后必读）**：BE 部署后必须 set env `BEARER_COMPAT_DEADLINE_ISO` 为部署时间 + 24h（如 `date -u -v+24H +"%Y-%m-%dT%H:%M:%SZ"`），24h 后 Bearer 失效；不设则兼容期"永远开启"，安全收益打折
 
-**新会话第一步建议**（接手 Part 2）：
-1. 读 `.claude/plan/c005-part1-merged.md` 了解 Part 1 落地实情 + Part 2 设计依赖
-2. 读 `.claude/plan/audit-fixes.md` §1160 Part 2 段（HttpOnly Cookie + CSRF + CORS allow_credentials）
-3. Part 2 风险点：FE axios 全链路改造（不再注入 Bearer，改 `withCredentials: true`）+ AuthGuard 改为基于 `/auth/me`；e2e 必须扩 1-2 case（cookie 登录 + CSRF 拒绝）
-4. **测试基线**：每次提交后 backend `239+` / frontend vitest `50+` / **e2e `11+`（基线 11/12，含 1 pre-existing flake）**；OpenAPI 改动后跑 `bash scripts/gen-docs.sh`
+**新会话第一步建议**（推 Month 3 生态/体验）：
+1. 读 `.claude/plan/c005-part2-merged.md` 了解 Part 2 落地决策（SameSite=Lax / 双提交 cookie / 24h Bearer 兼容期 / token_exp_at server-side 等 11 处）
+2. **测试基线**：每次提交后 backend `245+` / frontend vitest `49+` / e2e `13+`（含 cookie+CSRF case）/ OpenAPI 改动后跑 `bash scripts/gen-docs.sh`
 
 **重要不变量**：
 - Alembic head 当前 `0011`（C-005 Part 1 落地：`token_jti_blacklist` 表，jti String(32) PK + user_id FK CASCADE + revoked_at + exp_at + 3 索引）
-- `access_token_expire_minutes` = **120**（2 小时，C-005 Part 1 落地，原 10080）+ silent refresh 机制；新增 `access_token_refresh_grace_seconds=120`（refresh 端点 leeway 容时钟漂移）+ `token_blacklist_cleanup_interval_seconds=600`（节流 lazy cleanup 间隔）
-- 每个 JWT 含 `jti=uuid4().hex` claim；`get_current_user` 检查黑名单；**正常 refresh 不 revoke 旧 jti**（多标签兼容关键决策），仅 logout 写黑名单
-- 前端 axios 双实例：`api`（带 interceptor）+ `refreshApi`（独立无 interceptor 防递归）；single-flight refreshPromise + 5min 阈值 + 0-60s jitter；request interceptor 用 `config.headers.set()` 直接修改（不重建 headers，避免破坏 axios transformRequest）
-- `authStore.setToken(token)` 不动 username/userId；`storage` event 监听 → 跨标签登出同步
+- `access_token_expire_minutes` = **120**（2 小时，C-005 Part 1 落地，原 10080）+ silent refresh 机制；新增 `access_token_refresh_grace_seconds=120` + `token_blacklist_cleanup_interval_seconds=600`
+- **C-005 Part 2 落地**：cookie 模式 + 双提交 CSRF（access_token cookie HttpOnly + csrf_token cookie not-HttpOnly + X-CSRF-Token header）+ `BEARER_COMPAT_DEADLINE_ISO` env 控制 Bearer 兼容截止（未设默认永远开启）+ SameSite=Lax + cookie_secure 自动从 app_env 推导
+- 每个 JWT 含 `jti=uuid4().hex` claim；create_access_token 增 `csrf` claim（C-005 Part 2 新增）；`get_current_user` 双源读（cookie 优先 + Bearer fallback in compat window）+ jti 黑名单 + CSRF 校验（仅 cookie 路径 mutation）；**正常 refresh 不 revoke 旧 jti**（多标签兼容）
+- 前端 axios `withCredentials=true`（双实例 api + refreshApi）+ request interceptor 自动注入 X-CSRF-Token 从 `csrf_token` cookie（仅 mutation 方法）+ single-flight refreshPromise + 5min 阈值 + 0-60s jitter
+- `authStore` 字段：`username/userId/tokenExpAt/initialized`（**不再有 token 字段**）；`setSession({username?,userId?,tokenExpAt?})` + 异步 `initializeAuth()` 调 /auth/me（legacy localStorage Bearer fallback 一次性迁移）
+- `AuthGuard` 基于 `username` 判定 + `initialized` flag 防 race condition redirect
+- localStorage key：`coderecall_session`（新；存 username/userId/tokenExpAt 元数据，**不存 token**）+ `coderecall_token`（legacy；迁移完清）
+- `useAiAnalysisStream.ts` 改 fetch `credentials: "include"`（不再 localStorage Bearer 注入）
+- CORS `allow_credentials=True` + `allow_headers` 加 `X-CSRF-Token` + `expose_headers` 加 `X-CSRF-Token`
 - `MistakeListOut` 已在 list 路径生效（M-006 落地）；详情仍用 `MistakeOut`
 - `AppEnv` enum 已在 config 强类型（L-007 落地）；新增环境变量遵循 enum 习惯
 - `taxonomy_constraints.py` / `mistake_constraints.py` 已是 schema 长度约束的集中点

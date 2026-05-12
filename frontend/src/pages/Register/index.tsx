@@ -16,14 +16,15 @@ export default function RegisterPage() {
   const { t } = useTranslation();
   const { message } = App.useApp();
   const navigate = useNavigate();
-  const login = useAuthStore((state) => state.login);
+  const setSession = useAuthStore((state) => state.setSession);
   const [submitting, setSubmitting] = useState(false);
 
   const onFinish = async (values: RegisterForm) => {
     setSubmitting(true);
     try {
       const response = await registerRequest(values.username, values.password);
-      login(response.access_token, response.username, response.user_id);
+      const expMs = response.token_exp_at ? new Date(response.token_exp_at).getTime() : null;
+      setSession({ username: response.username, userId: response.user_id, tokenExpAt: expMs });
       void message.success(t("auth.registerSuccess"));
       navigate("/mistakes", { replace: true });
     } catch (error) {

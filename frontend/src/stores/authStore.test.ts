@@ -2,20 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useAuthStore } from "./authStore";
 
-const TOKEN_KEY = "coderecall_token";
-
-function base64UrlEncode(input: string): string {
-  return btoa(input).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-function makeJwt(payload: Record<string, unknown>): string {
-  const header = base64UrlEncode(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const body = base64UrlEncode(JSON.stringify(payload));
-  return `${header}.${body}.signature`;
-}
+const SESSION_KEY = "coderecall_session";
+const LEGACY_TOKEN_KEY = "coderecall_token";
 
 describe("authStore", () => {
   const storage = new Map<string, string>();
+  const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
     storage.clear();
@@ -25,96 +17,129 @@ describe("authStore", () => {
       removeItem: (key: string) => storage.delete(key),
       setItem: (key: string, value: string) => storage.set(key, value),
     });
-    useAuthStore.setState({ token: null, username: null, userId: null });
+    useAuthStore.setState({
+      username: null,
+      userId: null,
+      tokenExpAt: null,
+      initialized: false,
+    });
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    globalThis.fetch = originalFetch;
   });
 
-  describe("initializeAuth", () => {
-    it("rejects extra fields and only keeps token/username/userId", () => {
-      const futureExp = Math.floor(Date.now() / 1000) + 3600;
-      const token = makeJwt({ exp: futureExp });
-      storage.set(
-        TOKEN_KEY,
-        JSON.stringify({
-          token,
-          username: "alice",
-          userId: 7,
-          role: "admin",
-          _bypass: true,
-        }),
-      );
+  describe("setSession", () => {
+    it("persists username/userId/tokenExpAt to localStorage and store", () => {
+      const expMs = Date.now() + 7200_000;
+      useAuthStore.getState().setSession({ username: "alice", userId: 7, tokenExpAt: expMs });
 
-      useAuthStore.getState().initializeAuth();
-
-      const state = useAuthStore.getState() as unknown as Record<string, unknown>;
-      expect(state.token).toBe(token);
+      const state = useAuthStore.getState();
       expect(state.username).toBe("alice");
       expect(state.userId).toBe(7);
-      expect(state.role).toBeUndefined();
-      expect(state._bypass).toBeUndefined();
+      expect(state.tokenExpAt).toBe(expMs);
+      expect(JSON.parse(storage.get(SESSION_KEY) ?? "{}")).toEqual({
+        username: "alice",
+        userId: 7,
+        tokenExpAt: expMs,
+      });
     });
 
-    it("clears expired tokens and leaves the store at null", () => {
-      const pastExp = Math.floor(Date.now() / 1000) - 60;
-      const token = makeJwt({ exp: pastExp });
-      storage.set(TOKEN_KEY, JSON.stringify({ token, username: "alice", userId: 1 }));
+    it("partial update preserves other fields", () => {
+      useAuthStore.getState().setSession({ username: "alice", userId: 7, tokenExpAt: 100 });
+      useAuthStore.getState().setSession({ tokenExpAt: 200 });
 
-      useAuthStore.getState().initializeAuth();
-
-      expect(useAuthStore.getState().token).toBeNull();
-      expect(useAuthStore.getState().userId).toBeNull();
-      expect(storage.has(TOKEN_KEY)).toBe(false);
-    });
-
-    it("ignores payload when parsed.token is not a string", () => {
-      const futureExp = Math.floor(Date.now() / 1000) + 3600;
-      storage.set(
-        TOKEN_KEY,
-        JSON.stringify({ token: { exp: futureExp }, username: "alice", userId: 1 }),
-      );
-
-      useAuthStore.getState().initializeAuth();
-
-      expect(useAuthStore.getState().token).toBeNull();
-      expect(useAuthStore.getState().username).toBeNull();
-      expect(useAuthStore.getState().userId).toBeNull();
+      const state = useAuthStore.getState();
+      expect(state.username).toBe("alice");
+      expect(state.userId).toBe(7);
+      expect(state.tokenExpAt).toBe(200);
     });
   });
 
   describe("logout", () => {
-    it("clears coderecall_ever_imported_${userId} along with the token", () => {
-      useAuthStore.setState({ token: "tok", username: "alice", userId: 9 });
-      storage.set(TOKEN_KEY, "{}");
+    it("clears session + legacy token + coderecall_ever_imported_${userId}", () => {
+      useAuthStore.setState({
+        username: "alice",
+        userId: 9,
+        tokenExpAt: 100,
+        initialized: true,
+      });
+      storage.set(SESSION_KEY, "{}");
+      storage.set(LEGACY_TOKEN_KEY, "{}");
       storage.set("coderecall_ever_imported_9", "1");
       storage.set("coderecall_ever_imported_99", "1");
 
       useAuthStore.getState().logout();
 
-      expect(storage.has(TOKEN_KEY)).toBe(false);
+      expect(storage.has(SESSION_KEY)).toBe(false);
+      expect(storage.has(LEGACY_TOKEN_KEY)).toBe(false);
       expect(storage.has("coderecall_ever_imported_9")).toBe(false);
       expect(storage.has("coderecall_ever_imported_99")).toBe(true);
-      expect(useAuthStore.getState().token).toBeNull();
+      expect(useAuthStore.getState().username).toBeNull();
       expect(useAuthStore.getState().userId).toBeNull();
+      expect(useAuthStore.getState().tokenExpAt).toBeNull();
     });
   });
 
-  describe("setToken", () => {
-    it("setToken persists only token without clobbering username/userId", () => {
-      useAuthStore.getState().login("t1", "u", 1);
+  describe("initializeAuth", () => {
+    it("populates session from successful /auth/me cookie call", async () => {
+      const expIso = new Date(Date.now() + 7200_000).toISOString();
+      globalThis.fetch = vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({ id: 7, username: "alice", token_exp_at: expIso }),
+            { status: 200 },
+          ),
+      ) as unknown as typeof fetch;
 
-      useAuthStore.getState().setToken("t2");
+      await useAuthStore.getState().initializeAuth();
 
-      expect(useAuthStore.getState().token).toBe("t2");
-      expect(useAuthStore.getState().username).toBe("u");
-      expect(useAuthStore.getState().userId).toBe(1);
-      expect(JSON.parse(storage.get(TOKEN_KEY) ?? "{}")).toEqual({
-        token: "t2",
-        username: "u",
-        userId: 1,
+      const state = useAuthStore.getState();
+      expect(state.username).toBe("alice");
+      expect(state.userId).toBe(7);
+      expect(state.initialized).toBe(true);
+      expect(state.tokenExpAt).toBe(new Date(expIso).getTime());
+    });
+
+    it("clears session when /auth/me returns 401 and no legacy token", async () => {
+      globalThis.fetch = vi.fn(
+        async () => new Response("Unauthorized", { status: 401 }),
+      ) as unknown as typeof fetch;
+
+      await useAuthStore.getState().initializeAuth();
+
+      const state = useAuthStore.getState();
+      expect(state.username).toBeNull();
+      expect(state.userId).toBeNull();
+      expect(state.initialized).toBe(true);
+    });
+
+    it("migrates legacy localStorage Bearer token via fallback fetch", async () => {
+      storage.set(
+        LEGACY_TOKEN_KEY,
+        JSON.stringify({ token: "legacy-bearer", username: "alice", userId: 5 }),
+      );
+      const expIso = new Date(Date.now() + 7200_000).toISOString();
+      const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const headers = init?.headers as Record<string, string> | undefined;
+        if (headers?.Authorization === "Bearer legacy-bearer") {
+          return new Response(
+            JSON.stringify({ id: 5, username: "alice", token_exp_at: expIso }),
+            { status: 200 },
+          );
+        }
+        return new Response("Unauthorized", { status: 401 });
       });
+      globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+      await useAuthStore.getState().initializeAuth();
+
+      const state = useAuthStore.getState();
+      expect(state.username).toBe("alice");
+      expect(state.userId).toBe(5);
+      expect(state.initialized).toBe(true);
+      expect(storage.has(LEGACY_TOKEN_KEY)).toBe(false);
     });
   });
 });

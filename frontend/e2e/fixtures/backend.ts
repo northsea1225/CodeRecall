@@ -34,10 +34,11 @@ const VENV_PYTHON = join(BACKEND_DIR, ".venv", "bin", "python");
 const HEALTH_TIMEOUT_MS = 30_000;
 const HEALTH_POLL_INTERVAL_MS = 200;
 const SHUTDOWN_GRACE_MS = 2_000;
-// frontend axios baseURL is hardcoded to http://localhost:8000 in src/services/api.ts;
-// rather than threading a dynamic port through Vite (webServer starts before globalSetup),
-// the e2e backend reuses 8000 and refuses to start if the dev backend is already there.
-const E2E_BACKEND_PORT = 8000;
+// frontend axios baseURL is configurable via VITE_API_BASE_URL; for e2e
+// we pick a non-default port (18000) to avoid collision with dev / other
+// projects on 8000, and inject the URL into the vite webServer via
+// playwright.config.ts.
+const E2E_BACKEND_PORT = Number(process.env.E2E_BACKEND_PORT ?? 18000);
 
 async function isPortFree(port: number): Promise<boolean> {
   return new Promise((resolveP) => {
