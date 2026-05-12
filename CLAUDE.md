@@ -47,14 +47,14 @@ API 文档：`http://localhost:8000/docs`
 
 ## 当前焦点
 
-**Audit-fixes Phase 4 完成（5/5 · C-005 Part 1 ✅ / Part 2 BE+FE ✅，e2e 改造 follow-up）→ Month 3 生态/体验**（2026-05-04 更新）。
+**Audit-fixes Phase 4 完成（5/5 · C-005 Part 1+2 全部交付）→ Month 3 生态/体验**（2026-05-04 更新）。
 
 - 审阅产出：`docs/audit/2026-04-29/`（三方独立报告 Claude/Codex/Gemini + 综合 final-report.md）
 - 修复计划：`.claude/plan/audit-fixes.md`（41 个 issue × 4 个 Phase × 81h 工时，含 Codex 交叉验证合并决议）
 - **API 单一事实源**：`docs/openapi.json`（自动生成，CI gate 防漂移）；本地用 `bash scripts/gen-docs.sh` 重新生成
 - **执行模式**：Phase 2/3 期间用户授权 Claude 亲自执行（直接 Edit/Write，不派 Codex/team）。**Phase 3 已全清，临时例外随之失效**。Phase 4 默认回到「讨论 → 呈报 → 用户授权 → 派发 Codex/team」原协作流程，除非用户在新会话里重新授权例外。
 
-当前状态：backend **245 passed** · frontend **49 passed** · **e2e 待验**（Part 2 改造后 vite reuseExistingServer cache 阻塞，端口冲突 grok2api，列为 c005-part2-2 follow-up）· type-check 退出 0 · Alembic head: **0011** · C-005 Part 2 PR #1 BE 已 push `304b01d` / PR #2 FE 待 commit
+当前状态：backend **245 passed** · frontend **49 passed** · **e2e 13 passed + 1 pre-existing flake**（`onboarding loadDemo seeds mistakes` 在 main 分支 baseline 也 fail，与 C-005 无关）· type-check 退出 0 · Alembic head: **0011** · C-005 Part 2 全部 push（PR #1 BE `304b01d` / PR #2 FE `724ddf5` / e2e `bc8a19a`）
 
 ### Phase 4 启动指南（新会话必读）
 
@@ -82,10 +82,11 @@ API 文档：`http://localhost:8000/docs`
 | ~~I-006 + I-002 Playwright e2e~~ | ~~跨栈~~ | ~~6h~~ | §1177 | — | ~~中~~ | ✅ `fc5f193` |
 | ~~I-004 PWA / Service Worker~~ | ~~前端 + 后端 CORS~~ | ~~8h / ~7h~~ | §1183 | — | ~~中~~ | ✅ `f74182a` `1a90361` `da8df5b` `ebf906a` |
 | **C-005 Part 1** silent refresh + jti 黑名单 | 跨栈 | 8h / ~6h | §1160 | — | 高 | ✅ `f09d9fa` |
-| **C-005 Part 2** HttpOnly Cookie + CSRF + Bearer 兼容期 | 跨栈大改 | 12h / ~10h | §1160 | Part 1 ✅ + I-006 ✅ | 高 | ✅ PR #1 BE `304b01d` / PR #2 FE 待 commit |
+| **C-005 Part 2** HttpOnly Cookie + CSRF + Bearer 兼容期 | 跨栈大改 | 12h / ~14h | §1160 | Part 1 ✅ + I-006 ✅ | 高 | ✅ PR #1 BE `304b01d` + PR #2 FE `724ddf5` + e2e `bc8a19a` |
 
 **剩余 follow-up**：
-- **c005-part2-2 e2e 改造**：playwright config + fixture/auth.ts 改 cookie 注入（`context.addCookies` + setExtraHTTPHeaders X-CSRF-Token），加 2 case（cookie reload 持久 + CSRF 拒绝 mutation）。当前阻塞：vite `reuseExistingServer` cache 让 webServer env `VITE_API_BASE_URL` 注入对运行中 dev server 无效；待 vite 主动重启后可执行
+- ✅ ~~c005-part2-2 e2e 改造~~（落地于 `bc8a19a`：fixture cookie 注入 + 2 新 case + dynamic port 18000 + window.__E2E_API_BASE 覆盖；e2e 11→13 passed）
+- **c005-part2-3 文档同步**（SECURITY.md / README.md / CLAUDE.md 本次提交批量更新；OpenAPI 已在 PR #1 时重生成）
 - **部署运维（push 后必读）**：BE 部署后必须 set env `BEARER_COMPAT_DEADLINE_ISO` 为部署时间 + 24h（如 `date -u -v+24H +"%Y-%m-%dT%H:%M:%SZ"`），24h 后 Bearer 失效；不设则兼容期"永远开启"，安全收益打折
 
 **新会话第一步建议**（推 Month 3 生态/体验）：

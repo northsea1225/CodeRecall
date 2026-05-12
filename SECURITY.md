@@ -30,6 +30,7 @@ This document covers the security posture of CodeRecall / 码错本 and serves a
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Default 120 (2 hours, was 10080 pre-C-005) | Lower values reduce XSS exposure window; refresh endpoint keeps sessions alive |
 | `ACCESS_TOKEN_REFRESH_GRACE_SECONDS` | Default 120 | Leeway for `/auth/refresh` to tolerate clock skew (do not set > 600) |
 | `TOKEN_BLACKLIST_CLEANUP_INTERVAL_SECONDS` | Default 600 | Throttled lazy cleanup of expired blacklist rows |
+| `BEARER_COMPAT_DEADLINE_ISO` | ISO 8601 deadline timestamp **set explicitly at deploy time** | After C-005 Part 2, Bearer token is only accepted within this compat window (legacy clients in transition); empty default = compat **always on** (safer degrade, but does not collapse the XSS window). Set to `deploy_time + 24h` at rollout, e.g. `date -u -v+24H +"%Y-%m-%dT%H:%M:%SZ"` |
 | `OLD_USER_INITIAL_PASSWORD` | Non-default, strong | Must be changed after first login |
 | `APP_ENV` | `production` | Set explicitly in deployment |
 | `FRONTEND_ORIGIN` | Your actual frontend origin | No trailing slash, no wildcard |
@@ -40,11 +41,12 @@ This document covers the security posture of CodeRecall / 码错本 and serves a
 - [ ] `JWT_SECRET_KEY` is set to a randomly generated value (not the default `change-me-in-production`)
 - [ ] `APP_ENV=production` is set — this triggers the backend fail-fast check on startup
 - [ ] Token TTL (`ACCESS_TOKEN_EXPIRE_MINUTES`) is reviewed and set appropriately
-- [ ] Tokens are stored in `localStorage` on the frontend — XSS exposure window is **2h** after C-005 Part 1 (was 7d); Part 2 will move to HttpOnly Cookie + CSRF
-- [ ] Logout calls `POST /auth/logout` to revoke the token's `jti` server-side; `get_current_user` rejects requests with revoked jti
+- [ ] Tokens live in an **HttpOnly cookie** (C-005 Part 2); JavaScript cannot read `access_token`, only the `csrf_token` companion cookie. XSS can no longer exfiltrate the access token, only forge in-browser requests
+- [ ] CSRF protection uses double-submit cookie: `csrf_token` cookie (not HttpOnly) value must match the `X-CSRF-Token` request header **and** the `csrf` claim in the JWT; mutation methods (POST/PUT/PATCH/DELETE) are rejected 403 `csrf_invalid` if mismatched
+- [ ] `BEARER_COMPAT_DEADLINE_ISO` env is set at deploy time to `deploy_time + 24h` so legacy Bearer clients have a finite migration window; after the deadline only cookie-authenticated requests are accepted
+- [ ] Logout calls `POST /auth/logout` to revoke the current token's `jti` (server-side blacklist) **and** clears both cookies (`access_token` + `csrf_token`)
 - [ ] Silent refresh uses an isolated axios instance (no interceptor recursion); single-flight + 0-60s jitter prevents refresh thundering herd
-- [ ] HTTPS is used in production — tokens in transit must be encrypted
-- [ ] Frontend logout clears token from localStorage and redirects to `/login`
+- [ ] HTTPS is used in production — `Secure` cookie attribute is enforced when `APP_ENV in (production, staging)`
 
 ## Token Revocation (C-005 Part 1)
 
@@ -67,11 +69,51 @@ Implemented 2026-05-03 to address attack chain risk from `localStorage`-stored 7
 - Concurrent requests share the same in-flight refresh promise
 
 **Cross-tab logout sync**:
-- `authStore` listens for the `storage` event; when another tab removes `coderecall_token`, this tab also clears state and routes to `/login`
+- `authStore` listens for the `storage` event on key `coderecall_session`; when another tab removes the session entry, this tab also clears state and routes to `/login`
 
-**Known limitation (Part 2 will fix)**:
-- Tokens still live in `localStorage`, exposed to XSS (now reduced to 2h max)
-- No HttpOnly Cookie / CSRF yet — planned in C-005 Part 2 (12h, depends on this Part 1 + I-006 e2e harness)
+**Known limitation**:
+- Bearer fallback within `BEARER_COMPAT_DEADLINE_ISO` window can still be exfiltrated by XSS — same as pre-Part 2. Mitigated by Part 2 moving the primary auth path to HttpOnly cookie + CSRF (see next section)
+
+## Cookie Mode + CSRF (C-005 Part 2)
+
+Implemented 2026-05-04 to root-cause-fix the `localStorage`-XSS attack surface that Part 1 only narrowed.
+
+**Mechanism**:
+- Successful `/auth/token` / `/auth/register` / `/auth/refresh` responses set **two cookies**:
+  - `access_token` cookie: HttpOnly + Secure (when `cookie_secure`) + SameSite=Lax + Path=/api/v1 — JS cannot read this
+  - `csrf_token` cookie: NOT HttpOnly + Secure + SameSite=Lax + Path=/api/v1 — JS reads this and mirrors into the `X-CSRF-Token` request header
+- The `X-CSRF-Token` response header on the same endpoints carries the canonical csrf value for first-load bootstrapping
+- The JWT body carries a new `csrf` claim that the backend cross-checks against the header **and** the cookie (triple-check: header == cookie == jwt.csrf) on mutation methods
+
+**Bearer compatibility window**:
+- `get_current_user` reads access token in this order:
+  1. `Authorization: Bearer …` header — only accepted while `bearer_compat_active` is true (`now() < BEARER_COMPAT_DEADLINE_ISO`); the Bearer path skips CSRF validation to keep legacy clients working
+  2. `access_token` cookie — primary path; CSRF validated on mutation
+- After deadline, Bearer requests get 401 `missing_token`; only cookie path works
+- Empty `BEARER_COMPAT_DEADLINE_ISO` defaults to compat **always on** as a safe-fail-open. Set it explicitly at deploy time
+
+**Frontend behavior** (C-005 Part 2):
+- `axios` is configured with `withCredentials: true` on both `api` and `refreshApi` instances
+- Request interceptor reads `csrf_token` from `document.cookie` and injects `X-CSRF-Token` header for every POST/PUT/PATCH/DELETE
+- `useAuthStore` no longer holds the token; it tracks `username` / `userId` / `tokenExpAt` (mirrored from server-issued `/auth/me` response) + an `initialized` flag
+- `initializeAuth()` runs once on cold boot: calls `/auth/me` with cookie auth, falls back to legacy localStorage Bearer one-shot migration if cookie path returns 401, then clears `coderecall_token` to retire the legacy key
+- `AuthGuard` blocks render with `PageFallback` until `initialized` is true to avoid an initial /login redirect flash
+- SSE (`useAiAnalysisStream`) now uses `fetch(..., { credentials: "include" })` and does not inject Bearer
+
+**CORS configuration** (`backend/app/main.py`):
+- `allow_credentials=True`
+- `allow_headers` includes `X-CSRF-Token`
+- `expose_headers` includes `X-CSRF-Token` so JS can read the bootstrap value from `/auth/me`
+
+**Deployment runbook** (post-PR #1 BE + PR #2 FE):
+1. Set `BEARER_COMPAT_DEADLINE_ISO` env var: `export BEARER_COMPAT_DEADLINE_ISO=$(date -u -v+24H +"%Y-%m-%dT%H:%M:%SZ")` — gives existing Bearer users 24h to roll over to cookie mode
+2. Deploy BE first (PR #1 `304b01d`) — compat window opens; existing FE keeps working
+3. Deploy FE next (PR #2 `724ddf5` + e2e `bc8a19a`) — new FE talks cookies; old FE still works via Bearer fallback
+4. After 24h, Bearer fallback shuts off; any client still on the pre-Part-2 bundle will be forced to re-login
+5. Verify with `curl --cookie ... /api/v1/auth/me` that returned `Set-Cookie` carries `HttpOnly; Secure; SameSite=Lax`
+
+**Known limitation**:
+- HttpOnly cookies block XSS exfiltration but do not block XSS-driven CSRF (the attacker can still issue requests from the victim's browser). The double-submit CSRF token specifically defends against cross-site forgery, not in-page XSS. Defense in depth requires CSP + input sanitization (separate scope, not C-005)
 
 ## Default / Legacy User Checklist
 

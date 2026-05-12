@@ -13,7 +13,7 @@ Core loop: **Import problem → Record mistake → SM-2 scheduled review → 6-s
 
 - **Spaced Repetition (SM-2):** Optimized review scheduling for long-term retention.
 - **6-Stage AI Coaching:** Dynamic prompts adapt to your review stage (`new_mistake` / `early_review` / `repeated_weakness` / `lapsed` / `oscillator` / `maintenance`).
-- **JWT User Auth & Data Isolation:** Secure per-user data with Bearer token authentication; access tokens auto-refresh silently with single-flight + 5-minute pre-expiry; logout writes the token's `jti` to a server-side revocation list.
+- **JWT User Auth & Data Isolation:** Secure per-user data with **HttpOnly cookie auth + double-submit CSRF (X-CSRF-Token header)**; access tokens auto-refresh silently with single-flight + 5-minute pre-expiry; logout writes the token's `jti` to a server-side revocation list. Legacy Bearer accepted within `BEARER_COMPAT_DEADLINE_ISO` window for client transition.
 - **Streak Dashboard:** Continuous review streak, heatmap, trend charts, algorithm radar.
 - **Immersive Dark Room Review:** Full-screen distraction-free review mode (`/review/immersive`).
 - **CF / LeetCode URL Import:** One-click problem statement import from Codeforces and LeetCode (CN/EN).
@@ -103,6 +103,8 @@ Create `backend/.env` from `backend/.env.example`.
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Access token lifetime (minutes); silent refresh keeps sessions alive | `120` (2 hours) |
 | `ACCESS_TOKEN_REFRESH_GRACE_SECONDS` | Leeway for `/auth/refresh` to tolerate clock skew | `120` |
 | `TOKEN_BLACKLIST_CLEANUP_INTERVAL_SECONDS` | Throttle for lazy cleanup of revoked-token table | `600` |
+| `BEARER_COMPAT_DEADLINE_ISO` | ISO 8601 deadline — Bearer fallback rejected after this time (cookie-only). Set at deploy: `date -u -v+24H +"%Y-%m-%dT%H:%M:%SZ"`. Empty = compat always on (safer degrade) | `` (empty) |
+| `COOKIE_SECURE` | Force-override the `Secure` cookie attribute (overrides automatic deduction from `APP_ENV`). Leave empty in dev | `` (empty) |
 | `OLD_USER_INITIAL_PASSWORD` | Initial password for legacy-data owner account | `coderecall` |
 
 ### AI (optional)
@@ -148,9 +150,12 @@ All routes are at `/api/v1`, including auth (`/api/v1/auth/*`).
 ```bash
 # Register
 curl -X POST http://localhost:8000/api/v1/auth/register \
+  -c cookies.txt \
   -H 'Content-Type: application/json' \
   -d '{"username":"alice","password":"secure-pass-123"}'
-# Returns: {"access_token":"...", "token_type":"bearer", "user_id":2, "username":"alice"}
+# Returns: {"access_token":"...", "token_type":"bearer", "user_id":2, "username":"alice", "token_exp_at":"2026-..."}
+# Sets cookies: access_token (HttpOnly) + csrf_token (not HttpOnly); response header X-CSRF-Token mirrors csrf_token.
+# C-005 Part 2: cookie is the primary auth path; access_token in body is retained for the BEARER_COMPAT_DEADLINE_ISO window.
 
 # Login (form-encoded)
 curl -X POST http://localhost:8000/api/v1/auth/token \
