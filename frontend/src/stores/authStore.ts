@@ -20,7 +20,8 @@ interface AuthState {
 const SESSION_KEY = "coderecall_session";
 const LEGACY_TOKEN_KEY = "coderecall_token";
 const API_BASE =
-  (import.meta as ImportMeta & { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL ??
+  (typeof window !== "undefined" && (window as Window & { __E2E_API_BASE?: string }).__E2E_API_BASE) ||
+  (import.meta as ImportMeta & { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL ||
   "http://localhost:8000/api/v1";
 
 interface MeResponse {

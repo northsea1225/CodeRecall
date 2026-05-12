@@ -120,7 +120,13 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
     );
   }
   const port = E2E_BACKEND_PORT;
-  const baseURL = `http://127.0.0.1:${port}`;
+  // Use "localhost" (not 127.0.0.1) so e2e cookies share the same host as
+  // playwright's page baseURL ("http://localhost:5173"). When backend is on a
+  // different host (127.0.0.1), the SameSite cookie is technically cross-site
+  // and chromium silently refuses to expose csrf_token to document.cookie in
+  // the frontend origin — that breaks X-CSRF-Token injection by the axios
+  // request interceptor.
+  const baseURL = `http://localhost:${port}`;
 
   const env: NodeJS.ProcessEnv = {
     ...process.env,

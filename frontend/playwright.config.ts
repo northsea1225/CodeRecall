@@ -34,7 +34,10 @@ export default defineConfig({
   webServer: {
     command: "npm run dev",
     url: "http://localhost:5173",
-    reuseExistingServer: !isCI,
+    // Always restart vite for e2e so the dynamic VITE_API_BASE_URL env below
+    // actually applies (a previously-running dev server would have inherited
+    // a stale env and `reuseExistingServer: true` would silently bypass us).
+    reuseExistingServer: false,
     timeout: 120_000,
     stdout: "ignore",
     stderr: "pipe",

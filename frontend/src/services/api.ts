@@ -42,7 +42,21 @@ export const extractApiErrorMessage = (error: unknown): string => {
   return "Request failed.";
 };
 
-export const apiBaseURL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
+declare global {
+  interface Window {
+    __E2E_API_BASE?: string;
+  }
+}
+
+// E2E test harness can override the API base URL by setting window.__E2E_API_BASE
+// before app boots (via Playwright `page.addInitScript`). This is needed because
+// vite import.meta.env is build-time-replaced for production but the e2e backend
+// runs on a dynamic port. In normal dev/prod, the window override is undefined
+// and we fall back to VITE_API_BASE_URL (build-time) → :8000 default.
+export const apiBaseURL =
+  (typeof window !== "undefined" && window.__E2E_API_BASE) ||
+  import.meta.env.VITE_API_BASE_URL ||
+  "http://localhost:8000/api/v1";
 
 export const api = axios.create({ baseURL: apiBaseURL, withCredentials: true });
 export const refreshApi = axios.create({ baseURL: apiBaseURL, withCredentials: true });
