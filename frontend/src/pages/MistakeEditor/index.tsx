@@ -3,6 +3,7 @@ import {
   Button,
   Card,
   Col,
+  Divider,
   Form,
   Input,
   Rate,
@@ -12,12 +13,14 @@ import {
   Space,
   Typography,
 } from "antd";
+import type { InputRef } from "antd";
+import { PlusOutlined } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import CodeEditor from "../../components/common/CodeEditor";
 import { createMistake, getMistake, updateMistake } from "../../services/mistakeService";
-import { listCategories, listTags } from "../../services/taxonomyService";
+import { createCategory, listCategories, listTags } from "../../services/taxonomyService";
 import { draftStore, useDraftStore } from "../../stores/draftStore";
 import { useUIStore } from "../../stores/uiStore";
 import type { Category, Tag } from "../../types/mistake";
@@ -80,6 +83,9 @@ export default function MistakeEditorPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [addingCategory, setAddingCategory] = useState(false);
+  const newCategoryInputRef = useRef<InputRef>(null);
   const previousDraftKey = useRef<string | null>(null);
   const stableInitialValues = useMemo(() => draft ?? createEmptyDraft(), [draftKey]);
 
@@ -183,6 +189,32 @@ export default function MistakeEditorPage() {
     showToast("success", t("editor.urlAutoFillSuccess"));
   };
 
+  const handleAddCategory = async (event?: React.MouseEvent | React.KeyboardEvent) => {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    const name = newCategoryName.trim();
+    if (!name) return;
+    if (categories.some((c) => c.name === name)) {
+      showToast("error", t("editor.categoryAddExists"));
+      return;
+    }
+    setAddingCategory(true);
+    try {
+      const created = await createCategory({ name, description: "" });
+      setCategories((prev) => [...prev, created]);
+      form.setFieldValue("category_id", created.id);
+      patchDraft(draftKey, { category_id: created.id });
+      setNewCategoryName("");
+      showToast("success", t("editor.categoryAddSuccess"));
+      setTimeout(() => newCategoryInputRef.current?.focus(), 0);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t("editor.categoryAddFailed");
+      showToast("error", message);
+    } finally {
+      setAddingCategory(false);
+    }
+  };
+
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
@@ -252,6 +284,34 @@ export default function MistakeEditorPage() {
                     label: category.name,
                     value: category.id,
                   }))}
+                  dropdownRender={(menu) => (
+                    <>
+                      {menu}
+                      <Divider style={{ margin: "8px 0" }} />
+                      <Space style={{ padding: "0 8px 4px", width: "100%" }}>
+                        <Input
+                          ref={newCategoryInputRef}
+                          placeholder={t("editor.categoryAddPlaceholder")}
+                          value={newCategoryName}
+                          onChange={(e) => setNewCategoryName(e.target.value)}
+                          onKeyDown={(e) => {
+                            e.stopPropagation();
+                            if (e.key === "Enter") {
+                              void handleAddCategory(e);
+                            }
+                          }}
+                        />
+                        <Button
+                          type="text"
+                          icon={<PlusOutlined />}
+                          loading={addingCategory}
+                          onClick={(e) => void handleAddCategory(e)}
+                        >
+                          {t("editor.categoryAddButton")}
+                        </Button>
+                      </Space>
+                    </>
+                  )}
                 />
               </Form.Item>
             </Col>
