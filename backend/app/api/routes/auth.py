@@ -77,11 +77,19 @@ def _set_auth_cookies(response: Response, user: User) -> tuple[str, datetime]:
     payload = decode_access_token(token)
     exp_at = token_exp_datetime(payload)
     max_age = settings.access_token_expire_minutes * 60
+    # Cookies use path="/" (not "/api/v1") so the frontend JS — which lives on a
+    # different path namespace under the same origin — can `document.cookie`-read
+    # the csrf_token to inject the X-CSRF-Token header on mutations. With
+    # path="/api/v1" only requests under /api/v1 see the cookie at all (read +
+    # send), and document.cookie at /mistakes/new returns nothing. The browser
+    # still only sends the cookie to /api/v1 requests because that's where the
+    # frontend actually hits backend; same-site lax + httponly on access_token
+    # keep the security envelope intact.
     cookie_kwargs = dict(
         secure=settings.cookie_secure,
         samesite="lax",
         max_age=max_age,
-        path="/api/v1",
+        path="/",
     )
     response.set_cookie(key="access_token", value=token, httponly=True, **cookie_kwargs)
     response.set_cookie(key=CSRF_COOKIE, value=csrf, httponly=False, **cookie_kwargs)
@@ -100,8 +108,8 @@ def _auth_response(response: Response, user: User) -> AuthOut:
 
 
 def _clear_auth_cookies(response: Response) -> None:
-    response.delete_cookie("access_token", path="/api/v1")
-    response.delete_cookie(CSRF_COOKIE, path="/api/v1")
+    response.delete_cookie("access_token", path="/")
+    response.delete_cookie(CSRF_COOKIE, path="/")
 
 
 @router.post("/token", response_model=AuthOut)
