@@ -29,6 +29,16 @@ class VariantOut(BaseModel):
     variant_hint: str
 
 
+class GenerateCorrectAnswerRequest(BaseModel):
+    stem_markdown: str
+    language: str
+    model: Optional[str] = None
+
+
+class GenerateCorrectAnswerResponse(BaseModel):
+    correct_answer_markdown: str
+
+
 @router.get("/analyze/stream")
 @limiter.limit("30/minute")
 async def analyze_stream_route(
@@ -163,6 +173,51 @@ async def generate_variant_route(
     try:
         result = await provider.generate_variant(mistake, model=model)
         return VariantOut(**result)
+    except AiAnalysisError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail={"code": exc.code, "message": exc.message},
+        )
+
+
+@router.post("/generate-correct-answer", response_model=GenerateCorrectAnswerResponse)
+@limiter.limit("30/minute")
+async def generate_correct_answer_route(
+    request: Request,
+    payload: GenerateCorrectAnswerRequest,
+    current_user: User = Depends(get_current_user),
+) -> GenerateCorrectAnswerResponse:
+    """Inline AI codegen for the MistakeEditor "AI 生成答案" button.
+
+    The user has typed the stem + picked a language but has not saved the
+    mistake yet, so there's no mistake_id to scope by. Authentication still
+    flows through get_current_user (cookie or Bearer compat) so anonymous
+    abuse is impossible.
+    """
+    capability = get_ai_capability()
+    if not capability["enabled"]:
+        raise_api_error(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "ai_analysis_disabled",
+            "AI analysis is disabled.",
+        )
+
+    if not (payload.stem_markdown or "").strip():
+        raise_api_error(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "ai_invalid_input",
+            "Stem markdown is required.",
+            {"field": "stem_markdown"},
+        )
+
+    provider = build_provider()
+    try:
+        markdown = await provider.generate_correct_answer(
+            stem_markdown=payload.stem_markdown,
+            language=payload.language,
+            model=payload.model,
+        )
+        return GenerateCorrectAnswerResponse(correct_answer_markdown=markdown)
     except AiAnalysisError as exc:
         raise HTTPException(
             status_code=exc.status_code,

@@ -14,11 +14,12 @@ import {
   Typography,
 } from "antd";
 import type { InputRef } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
+import { PlusOutlined, RobotOutlined } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import CodeEditor from "../../components/common/CodeEditor";
+import { api } from "../../services/api";
 import { createMistake, getMistake, updateMistake } from "../../services/mistakeService";
 import { createCategory, listCategories, listTags } from "../../services/taxonomyService";
 import { draftStore, useDraftStore } from "../../stores/draftStore";
@@ -85,6 +86,7 @@ export default function MistakeEditorPage() {
   const [loading, setLoading] = useState(true);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [addingCategory, setAddingCategory] = useState(false);
+  const [generatingAnswer, setGeneratingAnswer] = useState(false);
   const newCategoryInputRef = useRef<InputRef>(null);
   const previousDraftKey = useRef<string | null>(null);
   const stableInitialValues = useMemo(() => draft ?? createEmptyDraft(), [draftKey]);
@@ -212,6 +214,36 @@ export default function MistakeEditorPage() {
       showToast("error", message);
     } finally {
       setAddingCategory(false);
+    }
+  };
+
+  const handleGenerateCorrectAnswer = async () => {
+    const rawStem = form.getFieldValue("stem_markdown");
+    const stem = typeof rawStem === "string" ? rawStem.trim() : "";
+    const language = form.getFieldValue("language") as string | undefined;
+    if (!stem) {
+      showToast("error", t("editor.aiAnswerNeedStem"));
+      return;
+    }
+    if (!language) {
+      showToast("error", t("editor.aiAnswerNeedLanguage"));
+      return;
+    }
+    setGeneratingAnswer(true);
+    try {
+      const response = await api.post<{ correct_answer_markdown: string }>(
+        "/ai/generate-correct-answer",
+        { stem_markdown: stem, language },
+      );
+      const markdown = response.data?.correct_answer_markdown ?? "";
+      form.setFieldValue("correct_answer_markdown", markdown);
+      patchDraft(draftKey, { correct_answer_markdown: markdown });
+      showToast("success", t("editor.aiAnswerSuccess"));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t("editor.aiAnswerFailed");
+      showToast("error", message);
+    } finally {
+      setGeneratingAnswer(false);
     }
   };
 
@@ -351,7 +383,20 @@ export default function MistakeEditorPage() {
             </Form.Item>
             <Form.Item
               name="correct_answer_markdown"
-              label={t("editor.fieldCorrectAnswer")}
+              label={
+                <Space size="small" align="center">
+                  <span>{t("editor.fieldCorrectAnswer")}</span>
+                  <Button
+                    size="small"
+                    type="link"
+                    icon={<RobotOutlined />}
+                    loading={generatingAnswer}
+                    onClick={() => void handleGenerateCorrectAnswer()}
+                  >
+                    {t("editor.generateCorrectAnswer")}
+                  </Button>
+                </Space>
+              }
               rules={[{ required: true, message: t("editor.correctAnswerRequired") }]}
             >
               <AnswerCodeEditor language={editorLanguage} height={400} theme={monacoTheme} />

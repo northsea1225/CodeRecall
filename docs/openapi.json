@@ -730,6 +730,48 @@
         "title": "ExportReviewSessionItem",
         "type": "object"
       },
+      "GenerateCorrectAnswerRequest": {
+        "properties": {
+          "language": {
+            "title": "Language",
+            "type": "string"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "stem_markdown": {
+            "title": "Stem Markdown",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stem_markdown",
+          "language"
+        ],
+        "title": "GenerateCorrectAnswerRequest",
+        "type": "object"
+      },
+      "GenerateCorrectAnswerResponse": {
+        "properties": {
+          "correct_answer_markdown": {
+            "title": "Correct Answer Markdown",
+            "type": "string"
+          }
+        },
+        "required": [
+          "correct_answer_markdown"
+        ],
+        "title": "GenerateCorrectAnswerResponse",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2826,6 +2868,56 @@
           }
         ],
         "summary": "Analyze Stream Route",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v1/ai/generate-correct-answer": {
+      "post": {
+        "description": "Inline AI codegen for the MistakeEditor \"AI 生成答案\" button.\n\nThe user has typed the stem + picked a language but has not saved the\nmistake yet, so there's no mistake_id to scope by. Authentication still\nflows through get_current_user (cookie or Bearer compat) so anonymous\nabuse is impossible.",
+        "operationId": "generate_correct_answer_route_api_v1_ai_generate_correct_answer_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateCorrectAnswerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateCorrectAnswerResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          },
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Generate Correct Answer Route",
         "tags": [
           "ai"
         ]

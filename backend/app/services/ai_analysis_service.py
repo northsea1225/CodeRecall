@@ -247,6 +247,109 @@ class AiAnalysisProvider:
             raise AiAnalysisError("ai_service_unavailable", "AI service is unavailable.", 503) from exc
 
 
+    async def generate_correct_answer(
+        self,
+        *,
+        stem_markdown: str,
+        language: str,
+        model: str | None = None,
+    ) -> str:
+        """Inline AI generation of a correct-answer code block for a new mistake.
+
+        Returns a markdown string. Designed for the MistakeEditor "AI 生成答案"
+        button: the editor has not persisted a mistake yet, so we can't reuse
+        analyze_stream / generate_variant (both require a Mistake row).
+        """
+        try:
+            import httpx
+        except ImportError as exc:
+            raise AiAnalysisError("ai_dependency_missing", "AI analysis dependency is missing.", 500) from exc
+
+        api_key = self.settings.llm_api_key.strip()
+        resolved_model = resolve_model(model, self.settings)
+        if not resolved_model:
+            raise AiAnalysisError("ai_model_not_configured", "No AI model configured.", 500)
+        if not api_key:
+            raise AiAnalysisError("ai_auth_failed", "AI API key is missing.", 401)
+
+        normalized_stem = (stem_markdown or "").strip()
+        normalized_language = (language or "").strip() or "cpp"
+        if not normalized_stem:
+            raise AiAnalysisError("ai_invalid_input", "Stem is empty.", 422)
+
+        # Escape the stem so a stem containing literal backticks or XML doesn't
+        # break the prompt envelope. The model sees the raw text inside CDATA-ish
+        # delimiters so it can't be confused about where the problem ends.
+        safe_stem = normalized_stem.replace("</PROBLEM_STEM>", "</ PROBLEM_STEM>")
+        system_prompt = (
+            "你是一位高级算法竞赛工程师，擅长用多种编程语言写出简洁、可编译、可 AC 的标准解答。"
+            "仅返回代码，不解释、不复述题目、不要测试用例。"
+        )
+        user_prompt = (
+            f"下面是一道编程题，请用 **{normalized_language}** 语言给出 AC 标准解答。\n\n"
+            f"<PROBLEM_STEM>\n{safe_stem}\n</PROBLEM_STEM>\n\n"
+            f"要求：\n"
+            f"1. 仅返回代码块（用 ``` 包裹并标注语言 `{normalized_language}`），代码块外不要任何文本。\n"
+            f"2. 代码必须可编译/可运行，含必要的 include / import。\n"
+            f"3. 风格简洁，仅在关键步骤加 1-2 行行内注释。\n"
+            f"4. 不要打印多余调试信息，不要测试 main，除非题目要求。\n"
+        )
+
+        base_url = self.settings.llm_base_url.rstrip("/")
+        url = f"{base_url}/chat/completions"
+        payload = {
+            "model": resolved_model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "stream": False,
+            "max_tokens": 4096,
+        }
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+
+        started_at = time.perf_counter()
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(180.0, connect=10.0)) as client:
+                response = await client.post(url, headers=headers, json=payload)
+                if response.status_code >= 400:
+                    raise map_ai_http_error(response.status_code, response.text)
+                data = response.json()
+                content: str = data["choices"][0]["message"]["content"].strip()
+                # Some models wrap the code block with surrounding prose despite
+                # the instruction. Extract the first fenced block defensively.
+                fence_start = content.find("```")
+                if fence_start >= 0:
+                    after = content[fence_start:]
+                    # Strip optional opening language tag.
+                    lines = after.splitlines()
+                    if lines[0].strip().startswith("```"):
+                        lines = lines[1:]
+                    fence_end_idx = None
+                    for i, line in enumerate(lines):
+                        if line.strip().startswith("```"):
+                            fence_end_idx = i
+                            break
+                    code_body = "\n".join(lines[:fence_end_idx]) if fence_end_idx is not None else "\n".join(lines)
+                    return f"```{normalized_language}\n{code_body.rstrip()}\n```"
+                # No fence found — wrap the whole reply.
+                return f"```{normalized_language}\n{content}\n```"
+        except AiAnalysisError:
+            raise
+        except httpx.TimeoutException as exc:
+            raise AiAnalysisError("ai_timeout", "AI request timed out.", 504) from exc
+        except httpx.HTTPError as exc:
+            raise AiAnalysisError("ai_service_unavailable", "AI service is unavailable.", 503) from exc
+        finally:
+            duration = time.perf_counter() - started_at
+            logger.info(
+                "ai_generate_correct_answer_finished language=%s model=%s duration_seconds=%.2f",
+                normalized_language,
+                resolved_model,
+                duration,
+            )
+
+
 def build_provider(app_settings: Settings | None = None) -> AiAnalysisProvider:
     return AiAnalysisProvider(app_settings or settings)
 
