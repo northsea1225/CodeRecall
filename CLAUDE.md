@@ -47,14 +47,36 @@ API 文档：`http://localhost:8000/docs`
 
 ## 当前焦点
 
-**Audit-fixes Phase 4 完成（5/5 · C-005 Part 1+2 全部交付）→ Month 3 生态/体验**（2026-05-04 更新）。
+**audit-fixes 41/41 全清 + C-005 部署测试完成 + 3 项产品 enhancement 已落地 → Month 3 生态/体验**（2026-05-15 更新）。
 
 - 审阅产出：`docs/audit/2026-04-29/`（三方独立报告 Claude/Codex/Gemini + 综合 final-report.md）
 - 修复计划：`.claude/plan/audit-fixes.md`（41 个 issue × 4 个 Phase × 81h 工时，含 Codex 交叉验证合并决议）
 - **API 单一事实源**：`docs/openapi.json`（自动生成，CI gate 防漂移）；本地用 `bash scripts/gen-docs.sh` 重新生成
-- **执行模式**：Phase 2/3 期间用户授权 Claude 亲自执行（直接 Edit/Write，不派 Codex/team）。**Phase 3 已全清，临时例外随之失效**。Phase 4 默认回到「讨论 → 呈报 → 用户授权 → 派发 Codex/team」原协作流程，除非用户在新会话里重新授权例外。
+- **执行模式**：audit-fixes 已全清；C-005 部署测试中用户授权 A 模式（Claude 直 Edit/Write）跑完 FE + 部署后 enhancement。**新会话默认回到 B 模式**（讨论 → 呈方案 → 派 Codex/team → 复核），除非用户在新会话里重新授权例外
 
-当前状态：backend **245 passed** · frontend **49 passed** · **e2e 13 passed + 1 pre-existing flake**（`onboarding loadDemo seeds mistakes` 在 main 分支 baseline 也 fail，与 C-005 无关）· type-check 退出 0 · Alembic head: **0011** · C-005 Part 2 全部 push（PR #1 BE `304b01d` / PR #2 FE `724ddf5` / e2e `bc8a19a`）
+当前状态：backend **245 passed** · frontend **49 passed** · **e2e 13 passed + 1 pre-existing flake**（`onboarding loadDemo seeds mistakes` 在 main 分支 baseline 也 fail，与 C-005 无关）· type-check 退出 0 · Alembic head: **0011** · origin/main 同步至 `911e689`（最新 4 commit 为 C-005 部署测试 hotfix + 3 项 UX enhancement）
+
+### C-005 部署测试期发现 + 落地（2026-05-15）
+
+测试期发现 1 个 cookie path bug + 3 项 UX 缺口，全部修完 push：
+
+| Commit | 类型 | 内容 |
+|--------|------|------|
+| `ef1de52` | hotfix | cookie `path="/api/v1"` → `path="/"`：前端 JS 在非 `/api/v1` 路径下 `document.cookie` 读不到 `csrf_token` → 所有 mutation 403。修复后浏览器需重新登录拿新 path 的 cookie |
+| `5fd2b72` | feat | MistakeEditor 分类下拉底部加内联输入框 + "+ 添加" 按钮（用 antd `dropdownRender`）：新用户没分类无法创建错题的 UX gap 修复 |
+| `f618149` | feat | 新 BE 端点 `POST /api/v1/ai/generate-correct-answer`（JSON 返回，30/min 限流）+ MistakeEditor "正确答案" label 加 AI 按钮：读 stem + language → 调端点 → 自动填代码 |
+| `911e689` | feat | 「错误答案」字段去掉 `required` 校验：用户请求允许只填正确答案 |
+
+### 部署测试运维要点（新会话接手前必读）
+
+1. **`BEARER_COMPAT_DEADLINE_ISO` 会按系统时间过期**：如果新会话距上次部署 > 24h，跑 backend pytest 会大面积 401（之前部署测试踩过坑——系统日期跳 3 天后所有 e2e/pytest 因 deadline 过期挂 63 个 case）。**新会话第一步**：检查 `backend/.env` 内 `BEARER_COMPAT_DEADLINE_ISO`，过期则刷新：
+   ```bash
+   NEW=$(date -u -v+24H +"%Y-%m-%dT%H:%M:%SZ")
+   sed -i.bak "s|BEARER_COMPAT_DEADLINE_ISO=.*|BEARER_COMPAT_DEADLINE_ISO=$NEW|" backend/.env
+   ```
+   或者部署测试期间空字符串（兼容期永远开启，安全收益打折但稳定）
+2. **JWT_SECRET_KEY + OLD_USER_INITIAL_PASSWORD**：dev 环境也 fail-fast（仅 `APP_ENV=test` 豁免）。部署测试时已生成随机值写入 `backend/.env`，不要 commit（`.env` 已 gitignored）
+3. **本地服务**：backend `uvicorn app.main:app --reload --host 127.0.0.1 --port 8000`（必须 venv），frontend `npm run dev`
 
 ### Phase 4 启动指南（新会话必读）
 
