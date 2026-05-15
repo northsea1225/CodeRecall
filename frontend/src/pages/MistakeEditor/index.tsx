@@ -377,7 +377,6 @@ export default function MistakeEditorPage() {
             <Form.Item
               name="wrong_answer_markdown"
               label={t("editor.fieldWrongAnswer")}
-              rules={[{ required: true, message: t("editor.wrongAnswerRequired") }]}
             >
               <AnswerCodeEditor language={editorLanguage} height={400} theme={monacoTheme} />
             </Form.Item>
