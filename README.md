@@ -1,202 +1,229 @@
 # CodeRecall / 码错本
 
-![Python 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)
-![Node 18+](https://img.shields.io/badge/Node-18%2B-green.svg)
-![pytest](https://img.shields.io/badge/pytest-229%20passed-success.svg)
-![vitest](https://img.shields.io/badge/vitest-45%20passed-success.svg)
+> **让每一次 AC，都站在错题之上**
+>
+> SM-2 间隔重复 + 6 阶段动态 AI 教练，把 WA 系统化转化为成长
 
-**CodeRecall / 码错本** is an intelligent, spaced-repetition programming mistake notebook for OI/ACM/LeetCode competitors. Core differentiators: 6-stage dynamic AI coaching (adapts to your review history, not generic replies) + SM-2 forgetting-curve scheduling + one-click LeetCode/Codeforces import.
+[![pytest](https://img.shields.io/badge/pytest-245%20passed-success.svg)](backend/tests/)
+[![vitest](https://img.shields.io/badge/vitest-49%20passed-success.svg)](frontend/src/)
+[![e2e](https://img.shields.io/badge/playwright-13%20passed-success.svg)](frontend/e2e/)
+[![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](docs/DEVELOPMENT.md)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-Core loop: **Import problem → Record mistake → SM-2 scheduled review → 6-stage dynamic AI deep analysis**
+---
 
-## ✨ Features
+## 山东大学 2026 春季编程共创活动 · 赛道一主题二
 
-- **Spaced Repetition (SM-2):** Optimized review scheduling for long-term retention.
-- **6-Stage AI Coaching:** Dynamic prompts adapt to your review stage (`new_mistake` / `early_review` / `repeated_weakness` / `lapsed` / `oscillator` / `maintenance`).
-- **JWT User Auth & Data Isolation:** Secure per-user data with **HttpOnly cookie auth + double-submit CSRF (X-CSRF-Token header)**; access tokens auto-refresh silently with single-flight + 5-minute pre-expiry; logout writes the token's `jti` to a server-side revocation list. Legacy Bearer accepted within `BEARER_COMPAT_DEADLINE_ISO` window for client transition.
-- **Streak Dashboard:** Continuous review streak, heatmap, trend charts, algorithm radar.
-- **Immersive Dark Room Review:** Full-screen distraction-free review mode (`/review/immersive`).
-- **CF / LeetCode URL Import:** One-click problem statement import from Codeforces and LeetCode (CN/EN).
-- **schema_v3 Import/Export:** Full backup including review history, UUID cross-device dedup, backward-compatible with v1/v2.
-- **Rich Code Editing:** Monaco editor with syntax highlighting; Markdown + LaTeX (KaTeX) rendering.
-- **Categorization & Tags:** Organize mistakes by language, algorithm category, and custom tags.
+| 项 | 内容 |
+|---|---|
+| 参赛主题 | **赛道一 主题二：编程错题本工具** |
+| 团队成员 | **胡博涵**（202500550240，全栈开发） · **董一延**（202433181022，视频制作） |
+| 学院班级 | 计算机类（书院）2 班 |
+| 开发周期 | 2026-04-22 → 2026-05-17（约 25 天） |
+| 仓库地址 | https://github.com/northsea1225/CodeRecall |
+| 演示视频 | 见 [`docs/competition/SCREENCAST.md`](docs/competition/SCREENCAST.md) 中的拍摄与提交流程 |
+| 原创性声明 | [`docs/competition/ORIGINALITY.md`](docs/competition/ORIGINALITY.md) |
+| 联系方式 | 胡博涵 QQ：1563570477 |
 
-## 🏗️ Architecture
+---
 
-```text
-+-------------------+     REST API & SSE      +-------------------+
-|   Frontend (SPA)  | <---------------------> |   Backend (API)   |
-|                   |                         |                   |
-| React 18          |                         | FastAPI           |
-| TypeScript        |                         | SQLAlchemy        |
-| Vite              |                         | SQLite            |
-| Ant Design 5      |                         | Alembic           |
-| react-router-dom  |                         | JWT Auth          |
-| Zustand 5         |                         | SSE AI            |
-+-------------------+                         | SM-2 Engine       |
-                                              +-------------------+
+## 🎯 一句话定位
+
+**面向 OI / ACM / LeetCode 选手的智能编程错题本**——不是把错题塞进数据库就完事，而是用 SM-2 间隔重复算法调度复习节奏，用 6 阶段动态 AI 教练根据复习状态给出针对性诊断。
+
+**核心循环**：导入题目 → 记录错误 → SM-2 间隔重复调度 → 6 阶段动态 AI 深度分析 → AC
+
+---
+
+## ✅ 基础功能完成度（活动要求 ↔ 项目实现）
+
+| # | 活动要求 | 项目实现 | 实现位置 |
+|---|---|---|---|
+| 1 | **错题添加**（题干 / 错答 / 正答 / 错因 / 分类） | 手动录入 + **LeetCode/CF URL 一键导入**；Monaco 编辑器（VS Code 同款）多语言语法高亮；Markdown + LaTeX (KaTeX) 渲染；AI 自动生成参考代码 | `/mistakes/new` |
+| 2 | **错题查询**（按分类 / 关键词搜索） | 全文搜索 + 分类 + 标签 + 掌握度**多维筛选**；分页 + 排序 + 标签云 | `/mistakes` |
+| 3 | **错题复习**（随机抽取 / 作答 / 核对 / 提示错因） | **SM-2 间隔重复算法**（非简单随机） + **6 阶段动态 AI 教练** + 键盘快捷键（空格翻牌，1–4 评分） + 复习 session 持久化 | `/review` |
+| 4 | **错题删除 / 修改** | 标准 CRUD + **归档**（不删除但移出复习池） + 二次确认 + 草稿恢复 | `/mistakes/:id/edit` |
+
+**4 / 4 基础功能 100% 完成 + 远超基础要求。**
+
+---
+
+## ⭐ 扩展功能（评审加分项）
+
+### 🧠 算法与产品
+- **SM-2 间隔重复算法**：基于 SuperMemo 2 公开论文实现，根据评分动态调整下次复习间隔
+- **6 阶段 ReviewStage 动态分类**：`new_mistake / early_review / repeated_weakness / lapsed / oscillator / maintenance`——AI 提示词根据状态变化，告别"通用回复"
+- **AI 流式输出**（SSE）：错题深度分析实时呈现，体验流畅
+- **AI 变体题生成**：基于现有错题自动出变体，巩固训练
+- **schema_v3 全量备份**：含 review_logs 历史，UUID 跨设备去重，三层幂等
+
+### 🏗️ 工程化（评审核心加分点）
+- **后端 245 测试 / 前端 49 测试 / 14 e2e 测试**，CI gate 防回归
+- **Alembic 11 个数据库迁移**，schema 演进可追溯可回滚
+- **CI 自动化**：bandit (SAST) + pip-audit + npm audit + bundle-size guard + OpenAPI 漂移检测
+- **JWT 安全方案 (C-005)**：HttpOnly Cookie + 双提交 CSRF + jti 黑名单 + silent refresh + Bearer 兼容期
+- **41 issue 三方代码审计**：Claude / Codex / Gemini **独立审阅 → 交叉验证 → 修复**（详见 [`docs/audit/2026-04-29/`](docs/audit/2026-04-29/)，本项目最具工程价值的部分）
+
+### 🎨 用户体验
+- **暗房沉浸式复习模式**：`/review/immersive` 全屏无侧边栏，专注度拉满
+- **Streak 连续打卡** + 7/30 天里程碑提示
+- **学习热力图** + 趋势图 + **算法能力雷达图**
+- **键盘快捷键**：复习页 `1/2/3/4` 评分，空格翻牌
+- **双主题（亮 / 暗）+ 中英双语 i18n**
+- **PWA 支持**：可安装到桌面，断网可读已缓存错题
+- **首次使用引导页**：4 道经典 C++ 错题（线段树 / DP / Dijkstra / int 溢出）一键载入
+
+### 📥 内容生态
+- **LeetCode / Codeforces URL 一键导入**：HTTP + GraphQL + HTML 解析 + MathJax 公式转换
+- **AI 生成正确答案**：在编辑器里点 AI 按钮，自动生成参考代码
+- **分类下拉内联创建**：录入时直接新建分类，无需切换页面
+
+---
+
+## 🏗 技术栈
+
+```
+Frontend                            Backend
+─────────────                       ─────────────
+React 18                            FastAPI
+TypeScript 5                        SQLAlchemy + SQLite
+Vite                                Alembic (11 migrations)
+Ant Design 5                        PyJWT + passlib (bcrypt)
+react-router-dom 7                  pydantic-settings
+Zustand 5                           slowapi (rate limit)
+Monaco Editor                       httpx
+KaTeX (LaTeX)                       markdownify
+vite-plugin-pwa + Workbox           uvicorn
+i18next (中英双语)                  DeepSeek API (AI)
 ```
 
-## 🚀 Quick Start
+**测试**：pytest / vitest / Playwright **CI**：GitHub Actions (5 个 workflow)
 
-### Backend
+---
+
+## 🚀 30 秒快速运行
+
+### 后端
 
 ```bash
 cd backend
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+python3.11 -m venv .venv && source .venv/bin/activate
 pip install --require-hashes -r requirements.txt
-cp .env.example .env             # edit .env: set JWT_SECRET_KEY and OLD_USER_INITIAL_PASSWORD
+cp .env.example .env             # 编辑 .env：设置 JWT_SECRET_KEY 与 OLD_USER_INITIAL_PASSWORD
 alembic upgrade head
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload    # → http://localhost:8000
 ```
 
-### Frontend
+### 前端
 
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev                      # → http://localhost:5173
 ```
 
-Open `http://localhost:5173`. API docs: `http://localhost:8000/docs`.
+### 演示账号
 
-## 📦 Updating Backend Dependencies
+| 账号 | 用户名 | 密码 | 数据 |
+|---|---|---|---|
+| 现有数据账号 | `old_user` | `12345678` | 60 道现成错题 |
+| 新用户账号（自行注册） | — | — | 空数据，演示 onboarding |
 
-Backend dependencies are pinned with hashes via [`pip-tools`](https://pip-tools.readthedocs.io/). The flow:
+API 文档：http://localhost:8000/docs
 
-1. Edit `backend/requirements.in` (human-maintained version constraints).
-2. Recompile to regenerate `backend/requirements.txt`:
-   ```bash
-   cd backend
-   pip install pip-tools
-   pip-compile --generate-hashes --resolver=backtracking requirements.in -o requirements.txt
-   ```
-3. Verify in a clean venv:
-   ```bash
-   pip install --require-hashes -r requirements.txt
-   pytest tests/ -q                                                    # 229 passed
-   pip-audit --strict --requirement requirements.txt \
-     --ignore-vuln GHSA-6w46-j5rx-g56g
-   ```
+---
 
-`requirements.txt` is generated — **do not edit it by hand**. The remaining accepted CVE (pytest, test-only) is documented in [`SECURITY.md`](SECURITY.md#accepted-cves).
+## 🤖 AI 辅助开发声明（活动鼓励·主动公开）
 
-## ⚙️ Environment Variables
+活动文档原文："**养成善用 AI 辅助开发的硬核习惯**"。本项目作为这种习惯的实践样本，主动公开 AI 辅助开发的全流程方法论：
 
-Create `backend/.env` from `backend/.env.example`.
+- 使用 **Claude / Codex / Gemini 三模型协同**（CCG 工作流）
+- **41 issue 全部经过三方独立审阅 → 交叉验证 → 队员决策 → AI 落地 → 测试通过的闭环**
+- **队员理解每一行代码**，不存在"AI 黑盒"
 
-### Core
+**完整透明声明**：[`docs/competition/ORIGINALITY.md`](docs/competition/ORIGINALITY.md)
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `APP_ENV` | Runtime label: `development`, `test`, `production` | `development` |
-| `DATABASE_URL` | SQLAlchemy connection string | `sqlite:///./coderecall.db` |
-| `FRONTEND_ORIGIN` | Allowed CORS origin | `http://localhost:5173` |
+---
 
-### Auth (required in production)
+## 📂 项目结构
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `JWT_SECRET_KEY` | HS256 signing secret — **must change in production** | `change-me-in-production` |
-| `JWT_ALGORITHM` | JWT algorithm | `HS256` |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | Access token lifetime (minutes); silent refresh keeps sessions alive | `120` (2 hours) |
-| `ACCESS_TOKEN_REFRESH_GRACE_SECONDS` | Leeway for `/auth/refresh` to tolerate clock skew | `120` |
-| `TOKEN_BLACKLIST_CLEANUP_INTERVAL_SECONDS` | Throttle for lazy cleanup of revoked-token table | `600` |
-| `BEARER_COMPAT_DEADLINE_ISO` | ISO 8601 deadline — Bearer fallback rejected after this time (cookie-only). Set at deploy: `date -u -v+24H +"%Y-%m-%dT%H:%M:%SZ"`. Empty = compat always on (safer degrade) | `` (empty) |
-| `COOKIE_SECURE` | Force-override the `Secure` cookie attribute (overrides automatic deduction from `APP_ENV`). Leave empty in dev | `` (empty) |
-| `OLD_USER_INITIAL_PASSWORD` | Initial password for legacy-data owner account | `coderecall` |
-
-### AI (optional)
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `ENABLE_AI_ANALYSIS` | Enable AI endpoints | `false` |
-| `LLM_PROVIDER` | Provider identifier | `deepseek` |
-| `LLM_MODEL` | Default analysis model | `deepseek-v4-pro` |
-| `LLM_MODEL_PREMIUM` | Premium analysis model | `deepseek-v4-pro` |
-| `LLM_QUICK_MODEL` | Fast model (variant generation) | `deepseek-v4-flash` |
-| `LLM_API_KEY` | Provider API key — never commit | `` |
-| `LLM_BASE_URL` | Provider base URL | `https://api.deepseek.com/v1` |
-| `LLM_ALLOWED_MODELS` | Comma-separated allowlist | `deepseek-v4-pro,deepseek-v4-flash` |
-
-## 🔌 API Endpoints
-
-All routes are at `/api/v1`, including auth (`/api/v1/auth/*`).
-
-**Live docs**: <http://localhost:8000/docs> (Swagger UI) or <http://localhost:8000/redoc>.
-**Static reference**: [`docs/openapi.json`](docs/openapi.json) — auto-generated by `scripts/gen-docs.sh`; do not hand-edit. The `openapi-sync` GitHub Actions workflow blocks PRs whose checked-in JSON drifts from the live FastAPI schema.
-
-| Route | Description |
-|-------|-------------|
-| `POST /api/v1/auth/token` | Login (form-encoded, rate-limited 10/min) |
-| `POST /api/v1/auth/register` | Register new user (JSON, rate-limited 3/hour) |
-| `POST /api/v1/auth/refresh` | Refresh access token (rate-limited 120/min;1000/hour) |
-| `POST /api/v1/auth/logout` | Revoke current token's jti |
-| `GET /api/v1/auth/me` | Current user info |
-| `GET /api/v1/mistakes` | List mistakes (paginated, filterable) |
-| `POST /api/v1/mistakes` | Create mistake |
-| `GET /api/v1/review/sessions/{id}/next` | Next due mistake for review |
-| `POST /api/v1/review/sessions/{id}/submit` | Submit review rating |
-| `GET /api/v1/stats/overview` | Dashboard KPIs |
-| `GET /api/v1/ai/analyze/stream` | SSE AI analysis stream |
-| `POST /api/v1/ai/generate-variant/{id}` | AI variant problem |
-| `GET /api/v1/export/v3` | Full backup (schema_v3) |
-| `POST /api/v1/import/v3` | Restore from schema_v3 |
-| `POST /api/v1/import/problem-url/preview` | CF / LeetCode URL import |
-
-### Quick auth examples
-
-```bash
-# Register
-curl -X POST http://localhost:8000/api/v1/auth/register \
-  -c cookies.txt \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"alice","password":"secure-pass-123"}'
-# Returns: {"access_token":"...", "token_type":"bearer", "user_id":2, "username":"alice", "token_exp_at":"2026-..."}
-# Sets cookies: access_token (HttpOnly) + csrf_token (not HttpOnly); response header X-CSRF-Token mirrors csrf_token.
-# C-005 Part 2: cookie is the primary auth path; access_token in body is retained for the BEARER_COMPAT_DEADLINE_ISO window.
-
-# Login (form-encoded)
-curl -X POST http://localhost:8000/api/v1/auth/token \
-  -H 'Content-Type: application/x-www-form-urlencoded' \
-  -d 'username=alice&password=secure-pass-123'
+```
+.
+├── backend/                       # FastAPI 后端
+│   ├── app/                       # 业务代码（~6.4k LOC）
+│   │   ├── api/routes/            # 11 个路由模块
+│   │   ├── models/                # ORM 模型
+│   │   ├── schemas/               # Pydantic schema
+│   │   ├── services/              # 业务逻辑（含 SM-2 + 6 阶段 AI）
+│   │   └── core/config.py         # 强类型配置
+│   ├── alembic/versions/          # 11 个数据库迁移
+│   ├── tests/                     # 245 个测试
+│   └── requirements.txt           # pip-tools 钉版本（含 sha256 hash）
+├── frontend/                      # React 前端
+│   ├── src/                       # 业务代码（~7.4k LOC）
+│   │   ├── pages/                 # 页面组件
+│   │   ├── components/            # 共用组件
+│   │   ├── stores/                # Zustand 状态
+│   │   ├── services/api.ts        # axios + cookie + CSRF
+│   │   └── i18n/                  # 中英双语
+│   ├── e2e/                       # Playwright (14 cases)
+│   └── public/                    # PWA manifest + icons
+├── docs/
+│   ├── competition/
+│   │   ├── ORIGINALITY.md         # 📌 原创性 + AI 透明声明
+│   │   └── SCREENCAST.md          # 📌 演示视频教程 + 5min 文案
+│   ├── audit/2026-04-29/          # 🏗 三方代码审计报告（亮点）
+│   ├── DEVELOPMENT.md             # 开发者技术文档
+│   └── openapi.json               # 自动生成的 API 规格
+├── .github/workflows/             # 5 个 CI 工作流
+├── README.md                      # 本文件（评委入口）
+├── SECURITY.md                    # 生产安全 checklist
+└── CLAUDE.md                      # AI 协同开发交接文档
 ```
 
-## 🛠️ Development
+---
 
-### Backend
+## 📖 文档导航
 
-```bash
-# Run all tests (from backend/)
-.venv/bin/python -m pytest -q          # expected: 229 passed
+| 文档 | 面向读者 | 用途 |
+|---|---|---|
+| [README.md](README.md) | **评委 / 用户** | 项目入口（本文件） |
+| [docs/competition/ORIGINALITY.md](docs/competition/ORIGINALITY.md) | **评委** | 原创性 + AI 辅助声明 |
+| [docs/competition/SCREENCAST.md](docs/competition/SCREENCAST.md) | **队友董一延 / 评委** | 演示视频 5 分钟完整教程 + 旁白文案 |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | 开发者 | 环境变量 / 依赖更新 / 测试运行 |
+| [SECURITY.md](SECURITY.md) | 部署者 | 生产安全 checklist |
+| [docs/audit/2026-04-29/](docs/audit/2026-04-29/) | **评委（工程亮点）** | 三方代码审计完整报告 |
+| [CLAUDE.md](CLAUDE.md) | 开发协作 | AI 辅助开发会话上下文 |
 
-# Format / lint
-black app tests
-flake8 app tests
-```
+---
 
-### Frontend
+## 📊 项目数据一览
 
-```bash
-npm test -- --run          # expected: 45 passed (10 files)
-npm run type-check
-npm run build
-```
+| 维度 | 数字 |
+|---|---|
+| 代码量 | 后端 6.4k LOC Python + 前端 7.4k LOC TS/TSX |
+| 测试 | **245 + 49 + 13 = 307 个测试用例** |
+| API 端点 | 43 个 |
+| 数据库迁移 | 11 个 Alembic version |
+| 已修 issue | 41 / 41（三方审计） |
+| Git commits | 58 个（24 天） |
+| 开发活跃度 | 约 2.4 commits / 天 |
 
-## 🔒 Security Notice
+---
 
-**Before any real deployment:**
+## 📜 License
 
-1. Set `JWT_SECRET_KEY` to a random secret (`openssl rand -hex 32`).
-2. Set `OLD_USER_INITIAL_PASSWORD` to a strong password and immediately change it after first login.
-3. Set `APP_ENV=production` — the backend will refuse to start if the default JWT secret is used outside `development`/`test`.
+MIT License — 见 [LICENSE](LICENSE)（如有；未单独写则适用 MIT 默认条款）
 
-See [`SECURITY.md`](SECURITY.md) for the full production security checklist.
+---
 
-## 🤝 Contributing
+## 🙏 致谢
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes
-4. Open a Pull Request
+- **山东大学 2026 春季编程共创活动**主办方
+- 所用开源项目：FastAPI / React / Ant Design / Vite / Monaco Editor / KaTeX / 等等
+- AI 协同工具：Claude / Codex / Gemini / oh-my-claudecode (OMC)
+- SuperMemo SM-2 算法（Piotr Wozniak）
+
+---
+
+**评委你好** —— 谢谢评审，欢迎在 [GitHub Issues](https://github.com/northsea1225/CodeRecall/issues) 中提问，或联系开发负责人 **胡博涵 QQ 1563570477**。
