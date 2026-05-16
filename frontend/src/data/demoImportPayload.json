@@ -5,82 +5,130 @@
     {
       "name": "算法题",
       "description": "算法竞赛与刷题中的典型错误"
+    },
+    {
+      "name": "数据结构",
+      "description": "线段树 / 并查集 / 堆 / 哈希等数据结构使用陷阱"
+    },
+    {
+      "name": "STL 陷阱",
+      "description": "C++ STL 容器与算法的常见误用"
     }
   ],
   "tags": [
-    {
-      "name": "树形数据结构"
-    },
-    {
-      "name": "动态规划"
-    },
-    {
-      "name": "图论"
-    },
-    {
-      "name": "数论"
-    }
+    { "name": "树形数据结构" },
+    { "name": "动态规划" },
+    { "name": "图论" },
+    { "name": "数论" },
+    { "name": "字符串" },
+    { "name": "并查集" },
+    { "name": "STL" },
+    { "name": "贪心" }
   ],
   "mistakes": [
     {
       "title": "线段树 push_down 漏调",
-      "stem_markdown": "区间最大值线段树支持区间加法和区间查询最大值。由于 query 递归访问子节点前没有调用 push_down，子节点仍保留旧值，导致返回错误答案。",
-      "wrong_answer_markdown": "```cpp\nint query(int p, int l, int r, int ql, int qr) {\n  if (ql <= l && r <= qr) return tree[p].mx;\n  int mid = (l + r) >> 1;\n  int ans = INT_MIN;\n  if (ql <= mid) ans = max(ans, query(p << 1, l, mid, ql, qr));\n  if (qr > mid) ans = max(ans, query(p << 1 | 1, mid + 1, r, ql, qr));\n  return ans;\n}\n```\n\n错误点：lazy 标记未向下传递。",
-      "correct_answer_markdown": "```cpp\nint query(int p, int l, int r, int ql, int qr) {\n  if (ql <= l && r <= qr) return tree[p].mx;\n  push_down(p);\n  int mid = (l + r) >> 1;\n  int ans = INT_MIN;\n  if (ql <= mid) ans = max(ans, query(p << 1, l, mid, ql, qr));\n  if (qr > mid) ans = max(ans, query(p << 1 | 1, mid + 1, r, ql, qr));\n  return ans;\n}\n```\n\n修正：在 query 函数头部调用 push_down。",
-      "error_reason_markdown": "懒标记必须在 query/update 下探前调用，否则子节点数据是脏数据。只看当前节点的最大值是正确的，但递归到子区间前必须先把父节点的延迟更新传下去。",
+      "stem_markdown": "区间最大值线段树支持区间加法与区间查询最大值。由于 query 递归访问子节点前没有调用 push_down，子节点仍保留旧值（懒标记未下传），导致返回错误答案。\n\n**错点位置**：`query` 函数体内未调用 `push_down(p)`。",
+      "wrong_answer_markdown": "```cpp\nint query(int p, int l, int r, int ql, int qr) {\n  if (ql <= l && r <= qr) return tree[p].mx;\n  int mid = (l + r) >> 1;\n  int ans = INT_MIN;\n  if (ql <= mid) ans = max(ans, query(p << 1, l, mid, ql, qr));\n  if (qr > mid) ans = max(ans, query(p << 1 | 1, mid + 1, r, ql, qr));\n  return ans;\n}\n```\n\n错误点：lazy 标记未向下传递，子节点读到脏数据。",
+      "correct_answer_markdown": "```cpp\nint query(int p, int l, int r, int ql, int qr) {\n  if (ql <= l && r <= qr) return tree[p].mx;\n  push_down(p);  // 下探前必须先把懒标记传给子节点\n  int mid = (l + r) >> 1;\n  int ans = INT_MIN;\n  if (ql <= mid) ans = max(ans, query(p << 1, l, mid, ql, qr));\n  if (qr > mid) ans = max(ans, query(p << 1 | 1, mid + 1, r, ql, qr));\n  return ans;\n}\n```",
+      "error_reason_markdown": "懒标记必须在 query / update 下探**前**调用 push_down，否则子节点数据是脏数据。只看当前节点的最大值是正确的，但递归到子区间前必须先把父节点的延迟更新传下去。\n\n**记忆口诀**：『下探即下传』——递归进子树前一定先把 lazy 给孩子。",
       "language": "cpp",
       "difficulty": 4,
       "source": "经典算法 Demo",
       "status": "new",
-      "category_name": "算法题",
-      "tag_names": [
-        "树形数据结构"
-      ]
+      "category_name": "数据结构",
+      "tag_names": ["树形数据结构"]
     },
     {
       "title": "背包 DP 数组初始化错误",
-      "stem_markdown": "0-1 背包要求恰好装满容量 W 并取得最大价值。由于 dp 数组初始化为 0，不可达状态被当作可达状态，导致选空物品时结果错误。",
+      "stem_markdown": "0-1 背包要求**恰好装满**容量 W 并取得最大价值。由于 dp 数组初始化为 0，不可达状态被当作可达状态，导致选空物品时结果错误。\n\n**错点位置**：`memset(dp, 0, sizeof dp)` 把所有状态都视为可达。",
       "wrong_answer_markdown": "```cpp\nmemset(dp, 0, sizeof dp);\nfor (int i = 1; i <= n; ++i) {\n  for (int j = W; j >= w[i]; --j) {\n    dp[j] = max(dp[j], dp[j - w[i]] + v[i]);\n  }\n}\n```\n\n错误点：要求恰好装满时，不能把所有容量初始化为 0。",
-      "correct_answer_markdown": "```cpp\nfill(dp, dp + W + 1, INT_MIN / 2);\ndp[0] = 0;\nfor (int i = 1; i <= n; ++i) {\n  for (int j = W; j >= w[i]; --j) {\n    dp[j] = max(dp[j], dp[j - w[i]] + v[i]);\n  }\n}\n```\n\n修正：不可达状态初始化为 -INF，只有 dp[0] = 0。",
-      "error_reason_markdown": "恰好装满和最多装满的初始化策略不同。最多装满可以把空选择视为 0，但恰好装满必须区分不可达状态，否则会把不存在的转移当成合法方案。",
+      "correct_answer_markdown": "```cpp\nfill(dp, dp + W + 1, INT_MIN / 2);  // 不可达\ndp[0] = 0;                            // 只有空容量可达\nfor (int i = 1; i <= n; ++i) {\n  for (int j = W; j >= w[i]; --j) {\n    dp[j] = max(dp[j], dp[j - w[i]] + v[i]);\n  }\n}\n```",
+      "error_reason_markdown": "**恰好装满** 和 **最多装满** 的初始化策略不同：\n- 最多装满：可以把空选择视为 0，全部初始化为 0\n- 恰好装满：必须区分不可达状态，初始化为 -INF，**只有 dp[0] = 0**\n\n否则会把不存在的转移当成合法方案，结果偏大。",
       "language": "cpp",
       "difficulty": 3,
       "source": "经典算法 Demo",
       "status": "new",
       "category_name": "算法题",
-      "tag_names": [
-        "动态规划"
-      ]
+      "tag_names": ["动态规划"]
     },
     {
       "title": "Dijkstra 无 vis 标记 TLE",
-      "stem_markdown": "带权最短路使用优先队列优化 Dijkstra。由于每次从堆中取出节点后没有标记已访问，也没有跳过旧状态，重复松弛大量边，最终超时。",
-      "wrong_answer_markdown": "```cpp\nwhile (!pq.empty()) {\n  auto [d, u] = pq.top();\n  pq.pop();\n  for (auto [v, w] : graph[u]) {\n    if (dist[v] > d + w) {\n      dist[v] = d + w;\n      pq.push({dist[v], v});\n    }\n  }\n}\n```\n\n错误点：每次从堆中取出节点后未检查 vis。",
-      "correct_answer_markdown": "```cpp\nwhile (!pq.empty()) {\n  auto [d, u] = pq.top();\n  pq.pop();\n  if (vis[u]) continue;\n  vis[u] = true;\n  for (auto [v, w] : graph[u]) {\n    if (dist[v] > d + w) {\n      dist[v] = d + w;\n      pq.push({dist[v], v});\n    }\n  }\n}\n```\n\n修正：加 if (vis[u]) continue; 后立即 vis[u] = true。",
-      "error_reason_markdown": "Dijkstra 需要 vis 数组保证每个节点只被松弛一次。优先队列里会保留旧距离状态，不跳过已确定的节点会造成重复扩展，复杂度失控。",
+      "stem_markdown": "带权最短路使用优先队列优化 Dijkstra。由于每次从堆中取出节点后没有标记已访问，也没有跳过旧状态，重复松弛大量边，最终超时（TLE）。\n\n**错点位置**：`pq.pop()` 后没有 `vis[u]` 判断。",
+      "wrong_answer_markdown": "```cpp\nwhile (!pq.empty()) {\n  auto [d, u] = pq.top();\n  pq.pop();\n  for (auto [v, w] : graph[u]) {\n    if (dist[v] > d + w) {\n      dist[v] = d + w;\n      pq.push({dist[v], v});\n    }\n  }\n}\n```\n\n错误点：每次从堆中取出节点后未检查 vis，已确定的节点会被重复扩展。",
+      "correct_answer_markdown": "```cpp\nwhile (!pq.empty()) {\n  auto [d, u] = pq.top();\n  pq.pop();\n  if (vis[u]) continue;   // 跳过已确定节点\n  vis[u] = true;\n  for (auto [v, w] : graph[u]) {\n    if (dist[v] > d + w) {\n      dist[v] = d + w;\n      pq.push({dist[v], v});\n    }\n  }\n}\n```",
+      "error_reason_markdown": "Dijkstra 需要 vis 数组保证每个节点只被松弛一次。\n\n优先队列里会保留旧距离状态（因为不能 decrease-key），不跳过已确定的节点会造成重复扩展，复杂度从 $O((V+E) \\log V)$ 退化到指数级。",
       "language": "cpp",
       "difficulty": 3,
       "source": "经典算法 Demo",
       "status": "new",
       "category_name": "算法题",
-      "tag_names": [
-        "图论"
-      ]
+      "tag_names": ["图论"]
     },
     {
       "title": "int 溢出未开 long long",
-      "stem_markdown": "两数相乘后取模，输入范围允许 a 和 b 接近 1e9。乘法中间结果超出 int 范围，即使最终取模也已经得到错误值。",
-      "wrong_answer_markdown": "```cpp\nint ans = a * b % MOD;\n```\n\n错误点：a * b 在 int 中先溢出。",
-      "correct_answer_markdown": "```cpp\nlong long ans = (long long)a * b % MOD;\n```\n\n修正：乘法前强制转换为 long long。",
-      "error_reason_markdown": "a*b 在转换为 long long 之前已经溢出，必须在乘法前强制转换。只把结果变量声明为 long long 不够，因为表达式的计算类型仍然可能是 int。",
+      "stem_markdown": "两数相乘后取模，输入范围允许 $a, b \\le 10^9$。乘法中间结果超出 int 范围（$2^{31}-1 \\approx 2.1 \\times 10^9$），即使最终取模也已经得到错误值。\n\n**错点位置**：`a * b` 在 int 中先溢出，再赋值给 long long 已晚。",
+      "wrong_answer_markdown": "```cpp\nint a, b;\ncin >> a >> b;\nlong long ans = a * b % MOD;\n//             ^^^^^ 这里在 int 域内计算，已溢出\n```\n\n错误点：`a * b` 在转换为 long long 之前已经溢出。",
+      "correct_answer_markdown": "```cpp\nint a, b;\ncin >> a >> b;\nlong long ans = (long long)a * b % MOD;\n//             ^^^^^^^^^^^^ 强转 a 为 long long，整个表达式自动提升\n```",
+      "error_reason_markdown": "C++ 算术表达式的计算类型由**操作数类型**决定，与赋值目标无关：\n- `a * b` 中 a 和 b 都是 int → 整个乘法在 int 中算 → **乘法时已溢出**\n- 必须在乘法前**至少一个操作数**强转为 long long，整个表达式才会自动提升\n\n**记忆**：『提升要发生在运算之前，不是之后』。",
       "language": "cpp",
       "difficulty": 2,
       "source": "经典算法 Demo",
       "status": "new",
       "category_name": "算法题",
-      "tag_names": [
-        "数论"
-      ]
+      "tag_names": ["数论"]
+    },
+    {
+      "title": "KMP 失配数组越界",
+      "stem_markdown": "实现 KMP 算法的 fail 数组（next 数组）。失配指针定义为：\n\n$$\\text{fail}[i] = \\max\\{j < i : P[0..j-1] = P[i-j..i-1]\\}$$\n\n即模式串 P 在位置 i 的最长真前缀-后缀匹配长度。由于 `j = fail[j-1]` 后没有检查 `j > 0` 边界，j 可能变为 -1，访问 `fail[-1]` 越界。\n\n**错点位置**：while 循环条件缺少 `j > 0`。",
+      "wrong_answer_markdown": "```cpp\nvector<int> build_fail(const string& p) {\n  int n = p.size();\n  vector<int> fail(n, 0);\n  for (int i = 1; i < n; ++i) {\n    int j = fail[i - 1];\n    while (p[i] != p[j]) {  // 缺少 j > 0 判断\n      j = fail[j - 1];      // j=0 时 fail[-1] 越界\n    }\n    if (p[i] == p[j]) j++;\n    fail[i] = j;\n  }\n  return fail;\n}\n```\n\n错误点：当 j 已经为 0 仍不匹配时，应停止回跳，而不是继续访问 fail[-1]。",
+      "correct_answer_markdown": "```cpp\nvector<int> build_fail(const string& p) {\n  int n = p.size();\n  vector<int> fail(n, 0);\n  for (int i = 1; i < n; ++i) {\n    int j = fail[i - 1];\n    while (j > 0 && p[i] != p[j]) {  // 多了 j > 0\n      j = fail[j - 1];\n    }\n    if (p[i] == p[j]) j++;\n    fail[i] = j;\n  }\n  return fail;\n}\n```",
+      "error_reason_markdown": "KMP 的 fail 数组定义中，当回跳到 j=0 仍不匹配时，意味着**没有任何真前缀可匹配**，应该直接令 fail[i] = 0 而不是继续回跳。\n\n`while` 循环条件必须同时满足两点：\n1. `j > 0`（还有可回跳的真前缀）\n2. `p[i] != p[j]`（当前字符不匹配）\n\n少了第一项就会数组越界，Undefined Behavior。",
+      "language": "cpp",
+      "difficulty": 4,
+      "source": "经典算法 Demo",
+      "status": "new",
+      "category_name": "算法题",
+      "tag_names": ["字符串"]
+    },
+    {
+      "title": "快速幂中间值未开 long long",
+      "stem_markdown": "实现 $a^b \\bmod p$ 的快速幂。由于 `res *= base` 时 res 和 base 都声明为 int，乘法中间结果在 int 域内溢出，模运算结果错误。\n\n**错点位置**：`res` 和 `base` 类型错。",
+      "wrong_answer_markdown": "```cpp\nint qpow(int a, int b, int p) {\n  int res = 1, base = a % p;\n  while (b) {\n    if (b & 1) res = res * base % p;  // res * base 在 int 中溢出\n    base = base * base % p;            // 同样溢出\n    b >>= 1;\n  }\n  return res;\n}\n```\n\n错误点：当 p 接近 $10^9$ 时，res * base 已超过 $10^{18}$，int 无法承载。",
+      "correct_answer_markdown": "```cpp\nlong long qpow(long long a, long long b, long long p) {\n  long long res = 1, base = a % p;\n  while (b) {\n    if (b & 1) res = res * base % p;\n    base = base * base % p;\n    b >>= 1;\n  }\n  return res;\n}\n```",
+      "error_reason_markdown": "快速幂的乘法步骤涉及两个最大可达 $p-1 \\approx 10^9$ 的数相乘，乘积最大约 $10^{18}$，**必须用 long long 承载中间值**。\n\n常见错误：\n- 只把返回类型改为 long long，但局部变量仍是 int → 中间仍溢出\n- 只把 res 改 long long，base 还是 int → base * base 仍溢出\n\n**记忆**：『中间值 > 1e9 一律开 long long』。",
+      "language": "cpp",
+      "difficulty": 3,
+      "source": "经典算法 Demo",
+      "status": "new",
+      "category_name": "算法题",
+      "tag_names": ["数论"]
+    },
+    {
+      "title": "并查集 find 路径压缩缺赋值",
+      "stem_markdown": "实现带路径压缩的并查集 find 函数。代码递归找到根，但**没有把 fa[x] 更新为根**，路径压缩效果失效，复杂度退化为 $O(n)$ 每次。\n\n**错点位置**：递归返回时直接 `return find(fa[x])`，没有赋值。",
+      "wrong_answer_markdown": "```cpp\nint find(int x) {\n  if (fa[x] == x) return x;\n  return find(fa[x]);  // 缺路径压缩\n}\n```\n\n错误点：每次 find 都要走完一整条链，没有压缩路径。在最坏情况下（菊花链）每次 O(n)。",
+      "correct_answer_markdown": "```cpp\nint find(int x) {\n  if (fa[x] == x) return x;\n  return fa[x] = find(fa[x]);  // 路径压缩：把当前节点直接挂到根\n}\n```",
+      "error_reason_markdown": "并查集的均摊复杂度（接近 $O(\\alpha(n))$）依赖两个优化：\n1. **路径压缩**：find 过程中把链上每个节点直接挂到根\n2. **按秩合并**（可选）：union 时小树挂大树\n\n仅写 `return find(fa[x])` 只是查找，**没有压缩**。必须写成 `return fa[x] = find(fa[x])`，利用赋值表达式的返回值同时完成『查找 + 更新』。\n\n这是 C++ 表达式语法的妙用：赋值表达式的值就是被赋的值。",
+      "language": "cpp",
+      "difficulty": 3,
+      "source": "经典算法 Demo",
+      "status": "new",
+      "category_name": "数据结构",
+      "tag_names": ["并查集"]
+    },
+    {
+      "title": "priority_queue 默认大根堆陷阱",
+      "stem_markdown": "用 `priority_queue<pair<int,int>>` 实现 Dijkstra 的小顶堆，期望距离最小的先出。但 C++ 的 priority_queue **默认是大根堆**（最大元素在堆顶），距离更大的反而先出，算法结果错误。\n\n**错点位置**：缺少 `greater<>` 比较器。",
+      "wrong_answer_markdown": "```cpp\npriority_queue<pair<int,int>> pq;  // 默认大根堆\npq.push({0, start});\nwhile (!pq.empty()) {\n  auto [d, u] = pq.top();  // d 是当前堆中最大的距离\n  pq.pop();\n  // ... 这样 Dijkstra 逻辑完全错乱\n}\n```\n\n错误点：默认大根堆使得『当前最短』变成『当前最远』。",
+      "correct_answer_markdown": "```cpp\n// 方案 1：用 greater 显式声明小根堆\npriority_queue<pair<int,int>,\n               vector<pair<int,int>>,\n               greater<pair<int,int>>> pq;\n\n// 方案 2：距离取负（占位但易错，不推荐）\n// pq.push({-d, u});\n```",
+      "error_reason_markdown": "C++ STL 的 `priority_queue` 默认比较器是 `less<T>`，对应**大根堆**——这与一般直觉相反。\n\n要构造小根堆，需要：\n```cpp\npriority_queue<T, vector<T>, greater<T>>\n```\n\n**口诀**：『less 出大，greater 出小』——less 让小元素被排到后面（堆底），所以大元素在堆顶。\n\n这是 OI 选手第一周经常踩的坑，建议背下来。",
+      "language": "cpp",
+      "difficulty": 2,
+      "source": "经典算法 Demo",
+      "status": "new",
+      "category_name": "STL 陷阱",
+      "tag_names": ["STL", "图论"]
     }
   ]
 }

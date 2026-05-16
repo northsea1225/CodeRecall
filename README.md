@@ -5,7 +5,7 @@
 > SM-2 间隔重复 + 6 阶段动态 AI 教练，把 WA 系统化转化为成长
 
 [![pytest](https://img.shields.io/badge/pytest-245%20passed-success.svg)](backend/tests/)
-[![vitest](https://img.shields.io/badge/vitest-49%20passed-success.svg)](frontend/src/)
+[![vitest](https://img.shields.io/badge/vitest-56%20passed-success.svg)](frontend/src/)
 [![e2e](https://img.shields.io/badge/playwright-13%20passed-success.svg)](frontend/e2e/)
 [![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](docs/DEVELOPMENT.md)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -58,7 +58,7 @@
 - **schema_v3 全量备份**：含 review_logs 历史，UUID 跨设备去重，三层幂等
 
 ### 🏗️ 工程化（评审核心加分点）
-- **后端 245 测试 / 前端 49 测试 / 14 个端到端测试**，CI 关卡防止回归
+- **后端 245 测试 / 前端 56 测试 / 14 个端到端测试**，CI 关卡防止回归
 - **Alembic 11 个数据库迁移**，数据库结构演进可追溯可回滚
 - **持续集成自动化**：bandit（后端代码安全扫描） + pip-audit（依赖漏洞检测） + npm audit + 构建产物体积守门 + OpenAPI 漂移检测
 - **JWT 安全方案（C-005）**：HttpOnly Cookie + 双提交 CSRF + 令牌黑名单（jti revocation） + 静默刷新（silent refresh） + Bearer 令牌兼容期
@@ -203,7 +203,7 @@ API 文档：http://localhost:8000/docs
 | 维度 | 数字 |
 |---|---|
 | 代码量 | 后端 6.4k 行 Python · 前端 7.4k 行 TS/TSX |
-| 测试用例 | **245 + 49 + 13 = 307 个**（后端单元 + 前端单元 + 端到端） |
+| 测试用例 | **245 + 56 + 13 = 314 个**（后端单元 + 前端单元 + 端到端） |
 | API 端点 | 43 个 |
 | 数据库迁移 | 11 个 Alembic 版本 |
 | 已修复 issue | 41 / 41（三方代码审计） |
