@@ -58,20 +58,20 @@
 - **schema_v3 全量备份**：含 review_logs 历史，UUID 跨设备去重，三层幂等
 
 ### 🏗️ 工程化（评审核心加分点）
-- **后端 245 测试 / 前端 49 测试 / 14 e2e 测试**，CI gate 防回归
-- **Alembic 11 个数据库迁移**，schema 演进可追溯可回滚
-- **CI 自动化**：bandit (SAST) + pip-audit + npm audit + bundle-size guard + OpenAPI 漂移检测
-- **JWT 安全方案 (C-005)**：HttpOnly Cookie + 双提交 CSRF + jti 黑名单 + silent refresh + Bearer 兼容期
-- **41 issue 三方代码审计**：Claude / Codex / Gemini **独立审阅 → 交叉验证 → 修复**（详见 [`docs/audit/2026-04-29/`](docs/audit/2026-04-29/)，本项目最具工程价值的部分）
+- **后端 245 测试 / 前端 49 测试 / 14 个端到端测试**，CI 关卡防止回归
+- **Alembic 11 个数据库迁移**，数据库结构演进可追溯可回滚
+- **持续集成自动化**：bandit（后端代码安全扫描） + pip-audit（依赖漏洞检测） + npm audit + 构建产物体积守门 + OpenAPI 漂移检测
+- **JWT 安全方案（C-005）**：HttpOnly Cookie + 双提交 CSRF + 令牌黑名单（jti revocation） + 静默刷新（silent refresh） + Bearer 令牌兼容期
+- **41 个 issue 三方代码审计**：Claude / Codex / Gemini **独立审阅 → 交叉验证 → 修复**（详见 [`docs/audit/2026-04-29/`](docs/audit/2026-04-29/)，本项目最具工程价值的部分）
 
 ### 🎨 用户体验
 - **暗房沉浸式复习模式**：`/review/immersive` 全屏无侧边栏，专注度拉满
-- **Streak 连续打卡** + 7/30 天里程碑提示
+- **Streak 连续打卡天数** + 7 天 / 30 天里程碑提示
 - **学习热力图** + 趋势图 + **算法能力雷达图**
 - **键盘快捷键**：复习页 `1/2/3/4` 评分，空格翻牌
-- **双主题（亮 / 暗）+ 中英双语 i18n**
-- **PWA 支持**：可安装到桌面，断网可读已缓存错题
-- **首次使用引导页**：4 道经典 C++ 错题（线段树 / DP / Dijkstra / int 溢出）一键载入
+- **双主题（亮色 / 暗色）+ 中英双语切换**
+- **PWA 渐进式 Web 应用**：可安装到桌面，断网可读已缓存错题
+- **首次使用引导页**：4 道经典 C++ 错题（线段树 / 背包 DP / Dijkstra / int 溢出）一键载入
 
 ### 📥 内容生态
 - **LeetCode / Codeforces URL 一键导入**：HTTP + GraphQL + HTML 解析 + MathJax 公式转换
@@ -83,21 +83,22 @@
 ## 🏗 技术栈
 
 ```
-Frontend                            Backend
+前端                                 后端
 ─────────────                       ─────────────
 React 18                            FastAPI
 TypeScript 5                        SQLAlchemy + SQLite
-Vite                                Alembic (11 migrations)
+Vite                                Alembic（11 个数据库迁移）
 Ant Design 5                        PyJWT + passlib (bcrypt)
 react-router-dom 7                  pydantic-settings
-Zustand 5                           slowapi (rate limit)
+Zustand 5                           slowapi（接口速率限制）
 Monaco Editor                       httpx
-KaTeX (LaTeX)                       markdownify
+KaTeX（LaTeX 公式渲染）             markdownify
 vite-plugin-pwa + Workbox           uvicorn
-i18next (中英双语)                  DeepSeek API (AI)
+i18next（中英双语国际化）           DeepSeek 大模型 API
 ```
 
-**测试**：pytest / vitest / Playwright **CI**：GitHub Actions (5 个 workflow)
+**测试框架**：pytest（后端） · vitest（前端） · Playwright（端到端）
+**持续集成**：GitHub Actions，5 个工作流（安全扫描 / 端到端测试 / OpenAPI 漂移检测 等）
 
 ---
 
@@ -137,8 +138,8 @@ API 文档：http://localhost:8000/docs
 
 活动文档原文："**养成善用 AI 辅助开发的硬核习惯**"。本项目作为这种习惯的实践样本，主动公开 AI 辅助开发的全流程方法论：
 
-- 使用 **Claude / Codex / Gemini 三模型协同**（CCG 工作流）
-- **41 issue 全部经过三方独立审阅 → 交叉验证 → 队员决策 → AI 落地 → 测试通过的闭环**
+- 使用 **Claude / Codex / Gemini 三个大模型协同**（CCG 工作流）
+- **41 个代码 issue 全部经过三方独立审阅 → 交叉验证 → 队员决策 → AI 落地 → 测试通过的闭环**
 - **队员理解每一行代码**，不存在"AI 黑盒"
 
 **完整透明声明**：[`docs/competition/ORIGINALITY.md`](docs/competition/ORIGINALITY.md)
@@ -150,34 +151,34 @@ API 文档：http://localhost:8000/docs
 ```
 .
 ├── backend/                       # FastAPI 后端
-│   ├── app/                       # 业务代码（~6.4k LOC）
+│   ├── app/                       # 业务代码（约 6.4k 行 Python）
 │   │   ├── api/routes/            # 11 个路由模块
-│   │   ├── models/                # ORM 模型
-│   │   ├── schemas/               # Pydantic schema
+│   │   ├── models/                # ORM 数据模型
+│   │   ├── schemas/               # Pydantic 数据校验
 │   │   ├── services/              # 业务逻辑（含 SM-2 + 6 阶段 AI）
 │   │   └── core/config.py         # 强类型配置
-│   ├── alembic/versions/          # 11 个数据库迁移
-│   ├── tests/                     # 245 个测试
-│   └── requirements.txt           # pip-tools 钉版本（含 sha256 hash）
+│   ├── alembic/versions/          # 11 个数据库迁移脚本
+│   ├── tests/                     # 245 个测试用例
+│   └── requirements.txt           # pip-tools 钉版本（含 sha256 哈希校验）
 ├── frontend/                      # React 前端
-│   ├── src/                       # 业务代码（~7.4k LOC）
+│   ├── src/                       # 业务代码（约 7.4k 行 TS/TSX）
 │   │   ├── pages/                 # 页面组件
 │   │   ├── components/            # 共用组件
-│   │   ├── stores/                # Zustand 状态
-│   │   ├── services/api.ts        # axios + cookie + CSRF
-│   │   └── i18n/                  # 中英双语
-│   ├── e2e/                       # Playwright (14 cases)
-│   └── public/                    # PWA manifest + icons
+│   │   ├── stores/                # Zustand 全局状态
+│   │   ├── services/api.ts        # axios + 自动 Cookie + CSRF
+│   │   └── i18n/                  # 中英双语国际化
+│   ├── e2e/                       # Playwright 端到端测试（14 个用例）
+│   └── public/                    # PWA 清单 + 应用图标
 ├── docs/
 │   ├── competition/
 │   │   ├── ORIGINALITY.md         # 📌 原创性 + AI 透明声明
-│   │   └── SCREENCAST.md          # 📌 演示视频教程 + 5min 文案
-│   ├── audit/2026-04-29/          # 🏗 三方代码审计报告（亮点）
+│   │   └── SCREENCAST.md          # 📌 演示视频教程 + 5 分钟文案
+│   ├── audit/2026-04-29/          # 🏗 三方代码审计报告（工程亮点）
 │   ├── DEVELOPMENT.md             # 开发者技术文档
 │   └── openapi.json               # 自动生成的 API 规格
-├── .github/workflows/             # 5 个 CI 工作流
+├── .github/workflows/             # 5 个持续集成工作流
 ├── README.md                      # 本文件（评委入口）
-├── SECURITY.md                    # 生产安全 checklist
+├── SECURITY.md                    # 生产安全清单
 └── CLAUDE.md                      # AI 协同开发交接文档
 ```
 
@@ -191,7 +192,7 @@ API 文档：http://localhost:8000/docs
 | [docs/competition/ORIGINALITY.md](docs/competition/ORIGINALITY.md) | **评委** | 原创性 + AI 辅助声明 |
 | [docs/competition/SCREENCAST.md](docs/competition/SCREENCAST.md) | **队友董一延 / 评委** | 演示视频 5 分钟完整教程 + 旁白文案 |
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | 开发者 | 环境变量 / 依赖更新 / 测试运行 |
-| [SECURITY.md](SECURITY.md) | 部署者 | 生产安全 checklist |
+| [SECURITY.md](SECURITY.md) | 部署者 | 生产环境安全清单 |
 | [docs/audit/2026-04-29/](docs/audit/2026-04-29/) | **评委（工程亮点）** | 三方代码审计完整报告 |
 | [CLAUDE.md](CLAUDE.md) | 开发协作 | AI 辅助开发会话上下文 |
 
@@ -201,29 +202,29 @@ API 文档：http://localhost:8000/docs
 
 | 维度 | 数字 |
 |---|---|
-| 代码量 | 后端 6.4k LOC Python + 前端 7.4k LOC TS/TSX |
-| 测试 | **245 + 49 + 13 = 307 个测试用例** |
+| 代码量 | 后端 6.4k 行 Python · 前端 7.4k 行 TS/TSX |
+| 测试用例 | **245 + 49 + 13 = 307 个**（后端单元 + 前端单元 + 端到端） |
 | API 端点 | 43 个 |
-| 数据库迁移 | 11 个 Alembic version |
-| 已修 issue | 41 / 41（三方审计） |
-| Git commits | 58 个（24 天） |
-| 开发活跃度 | 约 2.4 commits / 天 |
+| 数据库迁移 | 11 个 Alembic 版本 |
+| 已修复 issue | 41 / 41（三方代码审计） |
+| Git 提交 | 58 次（24 天开发周期） |
+| 开发活跃度 | 约 2.4 次 / 天 |
 
 ---
 
-## 📜 License
+## 📜 开源协议
 
-MIT License — 见 [LICENSE](LICENSE)（如有；未单独写则适用 MIT 默认条款）
+本项目采用 **MIT 协议**——见根目录 [LICENSE](LICENSE) 文件（若未单独编写则适用 MIT 默认条款）。
 
 ---
 
 ## 🙏 致谢
 
 - **山东大学 2026 春季编程共创活动**主办方
-- 所用开源项目：FastAPI / React / Ant Design / Vite / Monaco Editor / KaTeX / 等等
-- AI 协同工具：Claude / Codex / Gemini / oh-my-claudecode (OMC)
-- SuperMemo SM-2 算法（Piotr Wozniak）
+- 所用开源项目：FastAPI / React / Ant Design / Vite / Monaco Editor / KaTeX 等
+- AI 协同工具：Claude / Codex / Gemini / oh-my-claudecode（OMC 多智能体框架）
+- SuperMemo SM-2 算法（作者 Piotr Wozniak，1985 年首次发表）
 
 ---
 
-**评委你好** —— 谢谢评审，欢迎在 [GitHub Issues](https://github.com/northsea1225/CodeRecall/issues) 中提问，或联系开发负责人 **胡博涵 QQ 1563570477**。
+**评委你好** —— 感谢评审，欢迎在 [GitHub Issues](https://github.com/northsea1225/CodeRecall/issues) 中提问，或联系开发负责人 **胡博涵 QQ：1563570477**。
