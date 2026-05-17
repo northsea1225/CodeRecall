@@ -21,7 +21,7 @@
 | 学院班级 | 计算机类（书院）2 班 |
 | 开发周期 | 2026-04-22 → 2026-05-17（约 25 天） |
 | 仓库地址 | https://github.com/northsea1225/CodeRecall |
-| 演示视频 | 见 [`docs/competition/SCREENCAST.md`](docs/competition/SCREENCAST.md) 中的拍摄与提交流程 |
+| 演示视频 | [`submission/coderecall-demo-胡博涵-202500550240.mp4`](submission/coderecall-demo-胡博涵-202500550240.mp4)（5 分钟 / 14 MB），拍摄教程见 [`docs/competition/SCREENCAST.md`](docs/competition/SCREENCAST.md) |
 | 原创性声明 | [`docs/competition/ORIGINALITY.md`](docs/competition/ORIGINALITY.md) |
 | 联系方式 | 胡博涵 QQ：1563570477 |
 
