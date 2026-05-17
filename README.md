@@ -127,10 +127,36 @@ npm run dev                      # → http://localhost:5173
 
 | 账号 | 用户名 | 密码 | 数据 |
 |---|---|---|---|
-| 现有数据账号 | `old_user` | `12345678` | 60 道现成错题 |
-| 新用户账号（自行注册） | — | — | 空数据，演示 onboarding |
+| 现有数据账号 | `old_user` | `12345678` | 72 道错题（含 12 道精选 C++ OI 经典错题 + 完整复习历史，覆盖 AI 6 阶段全部状态） |
+| 新用户账号（自行注册） | — | — | 空数据，可演示 onboarding 引导页 + 一键载入 8 道示例题 |
 
 API 文档：http://localhost:8000/docs
+
+### 启用 AI 6 阶段分析（可选）
+
+项目默认 `ENABLE_AI_ANALYSIS=false`，**4 项基础功能与所有扩展功能均不依赖 AI**，可直接运行。
+
+如果你想试用 AI 6 阶段错题分析 / AI 变体题生成 / AI 自动生成正确答案，需要自备一个大模型 API key（约 2 分钟配置）：
+
+1. 申请大模型 key：推荐 [DeepSeek 平台](https://platform.deepseek.com/api_keys)（新用户有免费额度）；也支持 OpenAI / Claude / 自建代理等任何 OpenAI 兼容接口
+2. 复制环境变量模板：
+
+   ```bash
+   cd backend
+   cp .env.example .env
+   ```
+
+3. 编辑 `backend/.env`，至少改这两行：
+
+   ```env
+   ENABLE_AI_ANALYSIS=true
+   LLM_API_KEY=你申请到的 key
+   ```
+
+4. 重启后端 `uvicorn app.main:app --reload` 即可生效
+
+> 换其他厂商时同步修改 `LLM_BASE_URL` 和 `LLM_MODEL`，完整变量说明见 [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)。
+> ⚠️ `.env` 已在 `.gitignore` 中，**永远不会被提交到仓库**。本仓库历史中也从未出现过任何真实 API key（已经全程透明验证过）。
 
 ---
 
